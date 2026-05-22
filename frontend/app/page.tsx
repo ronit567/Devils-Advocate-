@@ -126,10 +126,14 @@ export default function Home() {
             }
           });
 
-          // Subtle "reaction" lines to the recent speakers (except in initial phase, where agents speak independently)
+          // Subtle "reaction" lines to recent speakers (except in initial phase, where agents speak independently)
           if (msg.phase !== "initial") {
             const recent = recentSpeakersRef.current;
-            const subtleTargets = Array.from(new Set(recent)).filter(
+            // If the message addresses the group broadly, fan out to everyone who's spoken recently;
+            // otherwise just react to the last few speakers
+            const addressesGroup = GROUP_PRONOUNS.some((p) => lowerContent.includes(p));
+            const candidatePool = addressesGroup ? recent : recent.slice(0, DEFAULT_RECENT_WINDOW);
+            const subtleTargets = Array.from(new Set(candidatePool)).filter(
               (id) => id !== msg.persona_id && !strongTargets.has(id)
             );
             subtleTargets.forEach((targetId) => {
