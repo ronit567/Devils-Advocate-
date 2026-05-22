@@ -42,7 +42,22 @@ export default function Home() {
   const connectionIdCounter = useRef(0);
   const recentSpeakersRef = useRef<string[]>([]);
 
-  const RECENT_SPEAKERS_WINDOW = 3;
+  const DEFAULT_RECENT_WINDOW = 3;
+  const GROUP_PRONOUNS = [
+    "everyone",
+    "everybody",
+    "all of you",
+    "you all",
+    "you guys",
+    "y'all",
+    "we all",
+    "all of us",
+    "the group",
+    "the rest of you",
+    "many of you",
+    "most of you",
+    "some of you",
+  ];
 
   // Sweep expired connections
   useEffect(() => {
