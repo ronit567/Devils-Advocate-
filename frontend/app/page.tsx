@@ -41,6 +41,11 @@ export default function Home() {
   const streamingContentRef = useRef<string>("");
   const connectionIdCounter = useRef(0);
   const recentSpeakersRef = useRef<string[]>([]);
+  const personasRef = useRef<PersonaInfo[]>([]);
+
+  useEffect(() => {
+    personasRef.current = personas;
+  }, [personas]);
 
   const DEFAULT_RECENT_WINDOW = 3;
   const GROUP_PRONOUNS = [
@@ -110,51 +115,46 @@ export default function Home() {
         const newConnections: Connection[] = [];
         const lowerContent = msg.content.toLowerCase();
         const strongTargets = new Set<string>();
+        const currentPersonas = personasRef.current;
 
         // Strong lines to any persona explicitly mentioned by name
-        setPersonas((currentPersonas) => {
-          currentPersonas.forEach((p) => {
-            if (p.id !== msg.persona_id && lowerContent.includes(p.name.toLowerCase())) {
-              strongTargets.add(p.id);
-              newConnections.push({
-                id: `mention-${msg.persona_id}-${p.id}-${connectionIdCounter.current++}`,
-                from: msg.persona_id,
-                to: p.id,
-                expiresAt: now + CONNECTION_LIFETIME_MS,
-                strong: true,
-              });
-            }
-          });
-
-          // Subtle "reaction" lines to recent speakers (except in initial phase, where agents speak independently)
-          if (msg.phase !== "initial") {
-            const recent = recentSpeakersRef.current;
-            // If the message addresses the group broadly, fan out to everyone who's spoken recently;
-            // otherwise just react to the last few speakers
-            const addressesGroup = GROUP_PRONOUNS.some((p) => lowerContent.includes(p));
-            const candidatePool = addressesGroup ? recent : recent.slice(0, DEFAULT_RECENT_WINDOW);
-            const subtleTargets = Array.from(new Set(candidatePool)).filter(
-              (id) => id !== msg.persona_id && !strongTargets.has(id)
-            );
-            subtleTargets.forEach((targetId) => {
-              newConnections.push({
-                id: `reaction-${msg.persona_id}-${targetId}-${connectionIdCounter.current++}`,
-                from: msg.persona_id,
-                to: targetId,
-                expiresAt: now + CONNECTION_LIFETIME_MS,
-                strong: false,
-              });
+        currentPersonas.forEach((p) => {
+          if (p.id !== msg.persona_id && lowerContent.includes(p.name.toLowerCase())) {
+            strongTargets.add(p.id);
+            newConnections.push({
+              id: `mention-${msg.persona_id}-${p.id}-${connectionIdCounter.current++}`,
+              from: msg.persona_id,
+              to: p.id,
+              expiresAt: now + CONNECTION_LIFETIME_MS,
+              strong: true,
             });
           }
-
-          if (newConnections.length > 0) {
-            setConnections((prev) => [...prev, ...newConnections]);
-          }
-          return currentPersonas;
         });
 
-        // Add current speaker to recent window (keep last N)
-        recentSpeakersRef.current = [msg.persona_id, ...recentSpeakersRef.current].slice(0, RECENT_SPEAKERS_WINDOW);
+        // Subtle "reaction" lines to recent speakers (except in initial phase, where agents speak independently)
+        if (msg.phase !== "initial") {
+          const recent = recentSpeakersRef.current;
+          const addressesGroup = GROUP_PRONOUNS.some((p) => lowerContent.includes(p));
+          const candidatePool = addressesGroup ? recent : recent.slice(0, DEFAULT_RECENT_WINDOW);
+          const subtleTargets = Array.from(new Set(candidatePool)).filter(
+            (id) => id !== msg.persona_id && !strongTargets.has(id)
+          );
+          subtleTargets.forEach((targetId) => {
+            newConnections.push({
+              id: `reaction-${msg.persona_id}-${targetId}-${connectionIdCounter.current++}`,
+              from: msg.persona_id,
+              to: targetId,
+              expiresAt: now + CONNECTION_LIFETIME_MS,
+              strong: false,
+            });
+          });
+        }
+
+        if (newConnections.length > 0) {
+          setConnections((prev) => [...prev, ...newConnections]);
+        }
+
+        recentSpeakersRef.current = [msg.persona_id, ...recentSpeakersRef.current].slice(0, 12);
         break;
       }
       case "cost_update": {
