@@ -61,6 +61,7 @@ export interface InsightReport {
 }
 
 export type WSEventType =
+  | "personas_loaded"
   | "message"
   | "token"
   | "agent_typing"
@@ -70,6 +71,16 @@ export type WSEventType =
   | "complete"
   | "error"
   | "ping";
+
+export interface PersonaInfo {
+  id: string;
+  name: string;
+  age: number;
+  occupation: string;
+  location: string;
+  archetype: string;
+  avatar_color: string;
+}
 
 export interface WSEvent {
   type: WSEventType;

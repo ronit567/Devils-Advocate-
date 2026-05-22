@@ -15,7 +15,7 @@ const EXAMPLE_BRIEFS = [
 
 export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
   const [brief, setBrief] = useState("");
-  const [numAgents, setNumAgents] = useState(20);
+  const [numAgents, setNumAgents] = useState(8);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,21 +35,21 @@ export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
           onChange={(e) => setBrief(e.target.value)}
           placeholder="Describe your product idea in 1-3 sentences. What does it do? Who is it for?"
           rows={5}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
+          className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
           disabled={isRunning}
         />
       </div>
 
       {/* Example briefs */}
       <div>
-        <p className="text-xs text-gray-600 mb-2">Try an example:</p>
+        <p className="text-xs text-gray-500 mb-2">Try an example:</p>
         <div className="space-y-1.5">
           {EXAMPLE_BRIEFS.map((example, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setBrief(example)}
-              className="w-full text-left text-xs text-gray-500 hover:text-gray-300 px-2 py-1.5 rounded bg-gray-800/50 hover:bg-gray-800 transition-colors truncate"
+              className="w-full text-left text-xs text-gray-600 hover:text-gray-900 px-2 py-1.5 rounded bg-white border border-gray-200 hover:border-gray-300 transition-colors truncate"
               disabled={isRunning}
             >
               {example}
@@ -61,19 +61,19 @@ export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
       {/* Agent count */}
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
-          Focus Group Size: <span className="text-white">{numAgents} participants</span>
+          Focus Group Size: <span className="text-gray-900">{numAgents} participants</span>
         </label>
         <input
           type="range"
           min={5}
           max={30}
-          step={5}
+          step={1}
           value={numAgents}
           onChange={(e) => setNumAgents(Number(e.target.value))}
           className="w-full accent-purple-500"
           disabled={isRunning}
         />
-        <div className="flex justify-between text-xs text-gray-600 mt-1">
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
           <span>5 (fast, ~$0.02)</span>
           <span>30 (rich, ~$0.15)</span>
         </div>
@@ -82,7 +82,7 @@ export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
       <button
         type="submit"
         disabled={isRunning || !brief.trim()}
-        className="w-full py-2.5 rounded-lg text-sm font-semibold bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white transition-colors"
+        className="w-full py-2.5 rounded-lg text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:bg-gray-200 disabled:text-gray-400 text-white transition-colors"
       >
         {isRunning ? "Focus group in session..." : "Start Focus Group"}
       </button>

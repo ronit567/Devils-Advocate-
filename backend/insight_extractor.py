@@ -46,9 +46,10 @@ async def extract_insights(
 
 
 async def _run_structural_analysis(product_brief: str, transcript: str) -> dict:
-    prompt = _EXTRACTION_TEMPLATE.format(
-        product_brief=product_brief,
-        transcript=transcript,
+    prompt = (
+        _EXTRACTION_TEMPLATE
+        .replace("{product_brief}", product_brief)
+        .replace("{transcript}", transcript)
     )
     response = await _client.messages.create(
         model=SONNET_MODEL,

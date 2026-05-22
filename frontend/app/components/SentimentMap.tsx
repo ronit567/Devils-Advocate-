@@ -20,18 +20,18 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs shadow-xl max-w-xs">
-      <div className="font-bold text-white mb-1">{d.agent_name}</div>
-      <div className={`mb-1 font-medium ${d.would_buy ? "text-green-400" : "text-red-400"}`}>
+    <div className="bg-white border border-gray-200 rounded-lg p-3 text-xs shadow-lg max-w-xs">
+      <div className="font-bold text-gray-900 mb-1">{d.agent_name}</div>
+      <div className={`mb-1 font-medium ${d.would_buy ? "text-emerald-600" : "text-red-600"}`}>
         {d.would_buy ? "Would buy" : "Would not buy"}
       </div>
-      <div className="text-gray-400">Sentiment: {d.overall_sentiment > 0 ? "+" : ""}{d.overall_sentiment.toFixed(2)}</div>
-      <div className="text-gray-400">Price sensitivity: {d.price_sensitivity}</div>
-      <div className="mt-2 text-gray-300">
-        <span className="text-red-400">Concern: </span>{d.top_concern}
+      <div className="text-gray-500">Sentiment: {d.overall_sentiment > 0 ? "+" : ""}{d.overall_sentiment.toFixed(2)}</div>
+      <div className="text-gray-500">Price sensitivity: {d.price_sensitivity}</div>
+      <div className="mt-2 text-gray-700">
+        <span className="text-red-600 font-medium">Concern: </span>{d.top_concern}
       </div>
-      <div className="text-gray-300">
-        <span className="text-green-400">Delight: </span>{d.top_delight}
+      <div className="text-gray-700">
+        <span className="text-emerald-600 font-medium">Delight: </span>{d.top_delight}
       </div>
     </div>
   );
@@ -40,7 +40,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 export default function SentimentMap({ sentiments }: Props) {
   if (sentiments.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-gray-600 text-sm">
+      <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
         Sentiment data will appear after the focus group completes
       </div>
     );
@@ -59,14 +59,14 @@ export default function SentimentMap({ sentiments }: Props) {
     <div className="space-y-4">
       {/* Summary bar */}
       <div className="flex items-center gap-4">
-        <div className="flex-1 bg-gray-800 rounded-full h-3 overflow-hidden">
+        <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full transition-all"
+            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className="text-sm text-gray-300 flex-shrink-0">
-          <span className="font-bold text-white">{pct}%</span> would buy
+        <span className="text-sm text-gray-700 flex-shrink-0">
+          <span className="font-bold text-gray-900">{pct}%</span> would buy
         </span>
       </div>
 
@@ -85,10 +85,10 @@ export default function SentimentMap({ sentiments }: Props) {
               type="number"
               domain={[-1, 1]}
               tickFormatter={(v) => v === 0 ? "Neutral" : v > 0 ? "Positive" : "Negative"}
-              tick={{ fill: "#6B7280", fontSize: 10 }}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
               tickCount={3}
             />
-            <ReferenceLine y={0} stroke="#374151" strokeDasharray="3 3" />
+            <ReferenceLine y={0} stroke="#e5e7eb" strokeDasharray="3 3" />
             <Tooltip content={<CustomTooltip />} />
             <Scatter data={data}>
               {data.map((entry, i) => (
@@ -105,11 +105,7 @@ export default function SentimentMap({ sentiments }: Props) {
           <div
             key={s.agent_id}
             title={`${s.agent_name}: ${s.would_buy ? "would buy" : "would not buy"} (${s.overall_sentiment > 0 ? "+" : ""}${s.overall_sentiment.toFixed(1)})`}
-            className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
-              s.would_buy
-                ? "border-green-700 text-green-300"
-                : "border-red-900 text-red-400"
-            }`}
+            className="text-xs px-2 py-0.5 rounded-full font-medium border bg-white"
             style={{ borderColor: s.avatar_color + "60", color: s.avatar_color }}
           >
             {s.agent_name}

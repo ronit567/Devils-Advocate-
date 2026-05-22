@@ -5,7 +5,15 @@ cd "$(dirname "$0")/backend"
 
 if [ ! -d ".venv" ]; then
   echo "Creating virtualenv..."
-  python3 -m venv .venv
+  if command -v python3.11 &> /dev/null; then
+    python3.11 -m venv .venv
+  elif command -v python3.12 &> /dev/null; then
+    python3.12 -m venv .venv
+  elif command -v python3.13 &> /dev/null; then
+    python3.13 -m venv .venv
+  else
+    python3 -m venv .venv
+  fi
 fi
 
 source .venv/bin/activate

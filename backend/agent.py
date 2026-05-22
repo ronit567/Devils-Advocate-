@@ -85,7 +85,6 @@ async def call_agent(
     # Final instruction
     messages.append({"role": "user", "content": phase_instruction})
 
-    full_response = ""
     async with _client.messages.stream(
         model=HAIKU_MODEL,
         max_tokens=300,
@@ -93,10 +92,7 @@ async def call_agent(
         messages=messages,
     ) as stream:
         async for text in stream.text_stream:
-            full_response += text
             yield text
-
-    return full_response
 
 
 def _participant_names(history: list[Message]) -> str:

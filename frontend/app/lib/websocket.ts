@@ -12,19 +12,31 @@ export class FocusGroupWS {
 
   connect() {
     const url = `ws://localhost:8000/session/${this.sessionId}/stream`;
+    console.log("[WS] connecting to", url);
     this.ws = new WebSocket(url);
+
+    this.ws.onopen = () => {
+      console.log("[WS] connected");
+    };
 
     this.ws.onmessage = (e) => {
       try {
         const event = JSON.parse(e.data) as WSEvent;
+        if (event.type !== "token" && event.type !== "ping") {
+          console.log("[WS] event:", event.type, event.data);
+        }
         this.onEvent(event);
       } catch {
-        console.error("Failed to parse WS message", e.data);
+        console.error("[WS] Failed to parse message", e.data);
       }
     };
 
     this.ws.onerror = (e) => {
-      console.error("WebSocket error", e);
+      console.error("[WS] error", e);
+    };
+
+    this.ws.onclose = (e) => {
+      console.log("[WS] closed", e.code, e.reason);
     };
   }
 

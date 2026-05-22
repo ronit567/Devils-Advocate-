@@ -81,6 +81,25 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
     session["ws_queue"] = ws_queue
     session["status"] = SessionStatus.running
 
+    # Send personas first so the frontend can place all nodes before the conversation starts
+    await ws_queue.put({
+        "type": "personas_loaded",
+        "data": {
+            "personas": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "age": p.age,
+                    "occupation": p.occupation,
+                    "location": p.location,
+                    "archetype": p.archetype,
+                    "avatar_color": p.avatar_color,
+                }
+                for p in session["personas"]
+            ]
+        },
+    })
+
     orchestrator = FocusGroupOrchestrator(
         session_id=session_id,
         personas=session["personas"],

@@ -1,8 +1,12 @@
 import asyncio
 import json
 import random
+import time
 from models import Persona, Message, Phase, WSEvent
 from agent import call_agent, COST_PER_TURN_USD
+
+TOKEN_FLUSH_CHARS = 25
+TOKEN_FLUSH_INTERVAL_S = 0.08
 
 
 class FocusGroupOrchestrator:
@@ -106,6 +110,8 @@ class FocusGroupOrchestrator:
         }))
 
         full_content = ""
+        buffer = ""
+        last_flush = time.monotonic()
         async for token in call_agent(
             persona=persona,
             product_brief=self.product_brief,
@@ -115,9 +121,19 @@ class FocusGroupOrchestrator:
             is_provocateur=is_provocateur,
         ):
             full_content += token
+            buffer += token
+            now = time.monotonic()
+            if len(buffer) >= TOKEN_FLUSH_CHARS or (now - last_flush) >= TOKEN_FLUSH_INTERVAL_S:
+                await self._emit(WSEvent(type="token", data={
+                    "persona_id": persona.id,
+                    "token": buffer,
+                }))
+                buffer = ""
+                last_flush = now
+        if buffer:
             await self._emit(WSEvent(type="token", data={
                 "persona_id": persona.id,
-                "token": token,
+                "token": buffer,
             }))
 
         self.turn_count += 1
