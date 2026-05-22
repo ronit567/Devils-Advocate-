@@ -1,0 +1,117 @@
+from pydantic import BaseModel
+from typing import Optional
+from enum import Enum
+
+
+class Phase(str, Enum):
+    initial = "initial"
+    debate = "debate"
+    synthesis = "synthesis"
+    complete = "complete"
+
+
+class Persona(BaseModel):
+    id: str
+    name: str
+    age: int
+    occupation: str
+    location: str
+    income_bracket: str  # low | middle | high
+    archetype: str
+    tech_comfort: int  # 1-5
+    pain_points: list[str]
+    motivations: list[str]
+    communication_style: str
+    likely_objections: list[str]
+    avatar_color: str
+
+
+class Message(BaseModel):
+    persona_id: str
+    persona_name: str
+    content: str
+    phase: Phase
+    turn: int
+    avatar_color: str
+
+
+class ConsensusPoint(BaseModel):
+    insight: str
+    supporting_agents: list[str]
+    confidence: float
+
+
+class ControversyPoint(BaseModel):
+    topic: str
+    pro_agents: list[str]
+    con_agents: list[str]
+    why_it_matters: str
+
+
+class NonObviousInsight(BaseModel):
+    insight: str
+    why_non_obvious: str
+    evidence: str
+
+
+class UnmetNeed(BaseModel):
+    need: str
+    expressed_by_archetype: str
+    product_implication: str
+
+
+class FatalFlaw(BaseModel):
+    flaw: str
+    severity: str  # high | medium | low
+    which_segments_care: list[str]
+
+
+class SurprisingAgreement(BaseModel):
+    topic: str
+    agents_who_agreed: list[str]
+    why_surprising: str
+
+
+class AgentSentiment(BaseModel):
+    agent_id: str
+    agent_name: str
+    overall_sentiment: float  # -1 to 1
+    would_buy: bool
+    price_sensitivity: str  # low | medium | high
+    top_concern: str
+    top_delight: str
+    avatar_color: str
+
+
+class InsightReport(BaseModel):
+    consensus_points: list[ConsensusPoint]
+    controversy_points: list[ControversyPoint]
+    non_obvious_insights: list[NonObviousInsight]
+    unmet_needs: list[UnmetNeed]
+    fatal_flaws: list[FatalFlaw]
+    surprising_agreements: list[SurprisingAgreement]
+    agent_sentiments: list[AgentSentiment]
+    executive_summary: list[str]
+
+
+class SessionStatus(str, Enum):
+    pending = "pending"
+    running = "running"
+    extracting = "extracting"
+    complete = "complete"
+    error = "error"
+
+
+class SessionCreate(BaseModel):
+    product_brief: str
+    num_agents: int = 20
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    status: SessionStatus
+
+
+class WSEvent(BaseModel):
+    type: str  # "message" | "phase_change" | "agent_typing" | "cost_update" | "complete" | "error"
+    data: dict
