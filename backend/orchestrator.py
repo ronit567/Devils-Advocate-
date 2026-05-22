@@ -18,6 +18,11 @@ class FocusGroupOrchestrator:
         self.history: list[Message] = []
         self.turn_count = 0
         self.total_cost = 0.0
+        # Assign ~25% of personas (min 1) as structural dissenters.
+        # Their role is to counter the LLM agreement bias during debate/synthesis,
+        # regardless of what their persona would naturally feel.
+        n_dissenters = max(1, len(personas) // 4)
+        self.dissenter_ids: set[str] = {p.id for p in random.sample(personas, n_dissenters)}
 
     async def run(self):
         try:
