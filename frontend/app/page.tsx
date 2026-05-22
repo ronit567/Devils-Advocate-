@@ -171,7 +171,7 @@ export default function Home() {
     setCompletedTurns(new Set());
     setTotalCost(0);
     setConnections([]);
-    previousSpeakerRef.current = null;
+    recentSpeakersRef.current = [];
     setActiveTab("graph");
 
     try {
