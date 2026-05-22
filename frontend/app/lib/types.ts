@@ -24,37 +24,48 @@ export interface AgentSentiment {
   avatar_color: string;
 }
 
+export interface Quote {
+  agent_name: string;
+  quote: string;
+}
+
 export interface InsightReport {
   consensus_points: Array<{
     insight: string;
     supporting_agents: string[];
     confidence: number;
+    supporting_quotes: Quote[];
   }>;
   controversy_points: Array<{
     topic: string;
     pro_agents: string[];
     con_agents: string[];
     why_it_matters: string;
+    supporting_quotes: Quote[];
   }>;
   non_obvious_insights: Array<{
     insight: string;
     why_non_obvious: string;
     evidence: string;
+    supporting_quotes: Quote[];
   }>;
   unmet_needs: Array<{
     need: string;
     expressed_by_archetype: string;
     product_implication: string;
+    supporting_quotes: Quote[];
   }>;
   fatal_flaws: Array<{
     flaw: string;
     severity: "high" | "medium" | "low";
     which_segments_care: string[];
+    supporting_quotes: Quote[];
   }>;
   surprising_agreements: Array<{
     topic: string;
     agents_who_agreed: string[];
     why_surprising: string;
+    supporting_quotes: Quote[];
   }>;
   agent_sentiments: AgentSentiment[];
   executive_summary: string[];

@@ -35,10 +35,16 @@ class Message(BaseModel):
     avatar_color: str
 
 
+class Quote(BaseModel):
+    agent_name: str
+    quote: str
+
+
 class ConsensusPoint(BaseModel):
     insight: str
     supporting_agents: list[str]
     confidence: float
+    supporting_quotes: list[Quote] = []
 
 
 class ControversyPoint(BaseModel):
@@ -46,30 +52,35 @@ class ControversyPoint(BaseModel):
     pro_agents: list[str]
     con_agents: list[str]
     why_it_matters: str
+    supporting_quotes: list[Quote] = []
 
 
 class NonObviousInsight(BaseModel):
     insight: str
     why_non_obvious: str
     evidence: str
+    supporting_quotes: list[Quote] = []
 
 
 class UnmetNeed(BaseModel):
     need: str
     expressed_by_archetype: str
     product_implication: str
+    supporting_quotes: list[Quote] = []
 
 
 class FatalFlaw(BaseModel):
     flaw: str
     severity: str  # high | medium | low
     which_segments_care: list[str]
+    supporting_quotes: list[Quote] = []
 
 
 class SurprisingAgreement(BaseModel):
     topic: str
     agents_who_agreed: list[str]
     why_surprising: str
+    supporting_quotes: list[Quote] = []
 
 
 class AgentSentiment(BaseModel):

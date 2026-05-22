@@ -10,27 +10,72 @@ Extract insights in this EXACT JSON schema. Do not add extra fields. Do not wrap
 
 {
   "consensus_points": [
-    {"insight": "string", "supporting_agents": ["name1", "name2"], "confidence": 0.0}
+    {
+      "insight": "string",
+      "supporting_agents": ["name1", "name2"],
+      "confidence": 0.0,
+      "supporting_quotes": [
+        {"agent_name": "string", "quote": "exact or near-exact line from the transcript above"}
+      ]
+    }
   ],
   "controversy_points": [
-    {"topic": "string", "pro_agents": ["name"], "con_agents": ["name"], "why_it_matters": "string"}
+    {
+      "topic": "string",
+      "pro_agents": ["name"],
+      "con_agents": ["name"],
+      "why_it_matters": "string",
+      "supporting_quotes": [
+        {"agent_name": "string", "quote": "exact or near-exact line from the transcript above"}
+      ]
+    }
   ],
   "non_obvious_insights": [
-    {"insight": "string", "why_non_obvious": "string", "evidence": "string"}
+    {
+      "insight": "string",
+      "why_non_obvious": "string",
+      "evidence": "string",
+      "supporting_quotes": [
+        {"agent_name": "string", "quote": "exact or near-exact line from the transcript above"}
+      ]
+    }
   ],
   "unmet_needs": [
-    {"need": "string", "expressed_by_archetype": "string", "product_implication": "string"}
+    {
+      "need": "string",
+      "expressed_by_archetype": "string",
+      "product_implication": "string",
+      "supporting_quotes": [
+        {"agent_name": "string", "quote": "exact or near-exact line from the transcript above"}
+      ]
+    }
   ],
   "fatal_flaws": [
-    {"flaw": "string", "severity": "high|medium|low", "which_segments_care": ["string"]}
+    {
+      "flaw": "string",
+      "severity": "high|medium|low",
+      "which_segments_care": ["string"],
+      "supporting_quotes": [
+        {"agent_name": "string", "quote": "exact or near-exact line from the transcript above"}
+      ]
+    }
   ],
   "surprising_agreements": [
-    {"topic": "string", "agents_who_agreed": ["name"], "why_surprising": "string"}
+    {
+      "topic": "string",
+      "agents_who_agreed": ["name"],
+      "why_surprising": "string",
+      "supporting_quotes": [
+        {"agent_name": "string", "quote": "exact or near-exact line from the transcript above"}
+      ]
+    }
   ]
 }
 
 Rules:
-- non_obvious_insights must contain things that ONLY emerged from participants reacting to each other — not things that would appear in a standard survey
-- Populate at least 2 entries in each array
-- surprising_agreements should highlight when people with opposing archetypes unexpectedly agreed on something
+- EVERY insight must have at least 2 supporting_quotes — these are the evidence trail. Quotes must come from the transcript above. Pull the most distinctive, vivid line from each cited speaker — not a generic restatement. If you can't find at least 2 distinct quotes that support an insight, drop the insight rather than fabricate.
+- agent_name in each quote must match a speaker name from the transcript exactly.
+- non_obvious_insights must contain things that ONLY emerged from participants reacting to each other — not things that would appear in a standard survey.
+- Populate at least 2 entries in each top-level array.
+- surprising_agreements should highlight when people with opposing archetypes unexpectedly agreed on something.
 - Be blunt. If a fatal flaw exists, name it clearly.

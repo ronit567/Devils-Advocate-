@@ -53,7 +53,7 @@ async def _run_structural_analysis(product_brief: str, transcript: str) -> dict:
     )
     response = await _client.messages.create(
         model=SONNET_MODEL,
-        max_tokens=4000,
+        max_tokens=8000,
         messages=[{"role": "user", "content": prompt}],
     )
     raw = response.content[0].text.strip()

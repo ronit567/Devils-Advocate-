@@ -9,6 +9,7 @@ import TranscriptPanel from "./components/TranscriptPanel";
 import InsightPanel from "./components/InsightPanel";
 import SentimentMap from "./components/SentimentMap";
 import PhaseIndicator from "./components/PhaseIndicator";
+import StatusCard from "./components/StatusCard";
 
 const API_BASE = "http://localhost:8000";
 
@@ -17,9 +18,10 @@ interface Connection {
   from: string;
   to: string;
   expiresAt: number;
+  strong: boolean;
 }
 
-const CONNECTION_LIFETIME_MS = 3000;
+const CONNECTION_LIFETIME_MS = 3500;
 
 export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
@@ -38,6 +40,9 @@ export default function Home() {
   const wsRef = useRef<FocusGroupWS | null>(null);
   const streamingContentRef = useRef<string>("");
   const connectionIdCounter = useRef(0);
+  const recentSpeakersRef = useRef<string[]>([]);
+
+  const RECENT_SPEAKERS_WINDOW = 3;
 
   // Sweep expired connections
   useEffect(() => {
@@ -87,25 +92,43 @@ export default function Home() {
         streamingContentRef.current = "";
         setCompletedTurns((prev) => new Set([...prev, msg.persona_id]));
 
-        // Detect any persona mentioned by name → create connection lines
+        const newConnections: Connection[] = [];
         const lowerContent = msg.content.toLowerCase();
+
+        // Subtle "reaction" line to the previous speaker (except in initial phase where agents speak independently)
+        const prevSpeaker = previousSpeakerRef.current;
+        if (prevSpeaker && prevSpeaker !== msg.persona_id && msg.phase !== "initial") {
+          newConnections.push({
+            id: `reaction-${msg.persona_id}-${connectionIdCounter.current++}`,
+            from: msg.persona_id,
+            to: prevSpeaker,
+            expiresAt: now + CONNECTION_LIFETIME_MS,
+            strong: false,
+          });
+        }
+
+        // Strong lines to any persona explicitly mentioned by name
         setPersonas((currentPersonas) => {
           const mentioned = currentPersonas.filter(
             (p) => p.id !== msg.persona_id && lowerContent.includes(p.name.toLowerCase())
           );
-          if (mentioned.length > 0) {
-            setConnections((prev) => [
-              ...prev,
-              ...mentioned.map((p) => ({
-                id: `${msg.persona_id}-${p.id}-${connectionIdCounter.current++}`,
-                from: msg.persona_id,
-                to: p.id,
-                expiresAt: now + CONNECTION_LIFETIME_MS,
-              })),
-            ]);
+          mentioned.forEach((p) => {
+            newConnections.push({
+              id: `mention-${msg.persona_id}-${p.id}-${connectionIdCounter.current++}`,
+              from: msg.persona_id,
+              to: p.id,
+              expiresAt: now + CONNECTION_LIFETIME_MS,
+              strong: true,
+            });
+          });
+
+          if (newConnections.length > 0) {
+            setConnections((prev) => [...prev, ...newConnections]);
           }
           return currentPersonas;
         });
+
+        previousSpeakerRef.current = msg.persona_id;
         break;
       }
       case "cost_update": {
@@ -141,6 +164,7 @@ export default function Home() {
     setCompletedTurns(new Set());
     setTotalCost(0);
     setConnections([]);
+    previousSpeakerRef.current = null;
     setActiveTab("graph");
 
     try {
@@ -161,38 +185,62 @@ export default function Home() {
     }
   }, [handleEvent]);
 
+  const savings = totalCost > 0 ? Math.max(0, 100 - (totalCost / 15000) * 100) : 0;
+
   return (
     <div className="flex h-screen bg-white text-gray-900 overflow-hidden">
       {/* Left panel */}
       <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 overflow-hidden bg-gray-50">
-        <div className="p-5 border-b border-gray-200">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-purple-500" />
-            <h1 className="text-sm font-bold text-gray-900 tracking-tight">SynthFocus</h1>
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-gray-900 tracking-tight leading-none">SynthFocus</h1>
+              <p className="text-[11px] text-gray-500 mt-0.5">AI focus groups in seconds</p>
+            </div>
           </div>
-          <p className="text-xs text-gray-500">AI focus groups in seconds</p>
         </div>
 
-        <div className="p-4 border-b border-gray-200 overflow-y-auto">
-          <ProductBriefForm onSubmit={handleStart} isRunning={isRunning} />
+        {/* Form */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">
+            <ProductBriefForm onSubmit={handleStart} isRunning={isRunning} />
+          </div>
+
+          {/* Status card (shown when running or after completion) */}
+          <StatusCard
+            phase={currentPhase}
+            isRunning={isRunning}
+            isExtracting={isExtracting}
+            personas={personas}
+            completedTurns={completedTurns}
+            typingPersonaId={typingPersonaId}
+            turnCount={messages.length}
+          />
         </div>
 
-        {/* Cost counter */}
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
-          <div>
-            <span className="text-xs text-gray-500">Research cost</span>
-            <div className="text-xs text-gray-400 mt-0.5">vs $15,000+ real focus group</div>
+        {/* Cost footer */}
+        <div className="border-t border-gray-200 bg-white px-4 py-3">
+          <div className="flex items-baseline justify-between mb-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Research cost</span>
+            <span className="text-base font-mono font-bold text-emerald-600">
+              ${totalCost.toFixed(4)}
+            </span>
           </div>
-          <span className="text-sm font-mono font-bold text-emerald-600">${totalCost.toFixed(4)}</span>
-        </div>
-
-        {/* Sentiment preview */}
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Sentiment Map</h3>
+          <div className="h-1 bg-gray-100 rounded-full overflow-hidden mb-1.5">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+              style={{ width: `${savings.toFixed(2)}%` }}
+            />
           </div>
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            <SentimentMap sentiments={insights?.agent_sentiments ?? []} />
+          <div className="flex justify-between text-[10px] text-gray-400">
+            <span>vs $15,000 real focus group</span>
+            <span className="font-semibold text-emerald-600">
+              {savings > 0 ? `${savings.toFixed(2)}% savings` : "—"}
+            </span>
           </div>
         </div>
       </aside>
