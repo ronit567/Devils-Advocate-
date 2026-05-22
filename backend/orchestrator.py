@@ -44,7 +44,7 @@ class FocusGroupOrchestrator:
 
         for round_num in range(rounds):
             speakers = self._select_speakers_for_round(phase, round_num)
-            for i, (persona, is_provocateur) in enumerate(speakers):
+            for persona, is_provocateur in speakers:
                 await self._run_turn(persona, phase, round_num, is_provocateur)
                 # Small pause between turns for natural pacing
                 await asyncio.sleep(0.1)
