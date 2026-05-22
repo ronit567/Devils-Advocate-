@@ -94,33 +94,39 @@ export default function Home() {
 
         const newConnections: Connection[] = [];
         const lowerContent = msg.content.toLowerCase();
-
-        // Subtle "reaction" line to the previous speaker (except in initial phase where agents speak independently)
-        const prevSpeaker = previousSpeakerRef.current;
-        if (prevSpeaker && prevSpeaker !== msg.persona_id && msg.phase !== "initial") {
-          newConnections.push({
-            id: `reaction-${msg.persona_id}-${connectionIdCounter.current++}`,
-            from: msg.persona_id,
-            to: prevSpeaker,
-            expiresAt: now + CONNECTION_LIFETIME_MS,
-            strong: false,
-          });
-        }
+        const strongTargets = new Set<string>();
 
         // Strong lines to any persona explicitly mentioned by name
         setPersonas((currentPersonas) => {
-          const mentioned = currentPersonas.filter(
-            (p) => p.id !== msg.persona_id && lowerContent.includes(p.name.toLowerCase())
-          );
-          mentioned.forEach((p) => {
-            newConnections.push({
-              id: `mention-${msg.persona_id}-${p.id}-${connectionIdCounter.current++}`,
-              from: msg.persona_id,
-              to: p.id,
-              expiresAt: now + CONNECTION_LIFETIME_MS,
-              strong: true,
-            });
+          currentPersonas.forEach((p) => {
+            if (p.id !== msg.persona_id && lowerContent.includes(p.name.toLowerCase())) {
+              strongTargets.add(p.id);
+              newConnections.push({
+                id: `mention-${msg.persona_id}-${p.id}-${connectionIdCounter.current++}`,
+                from: msg.persona_id,
+                to: p.id,
+                expiresAt: now + CONNECTION_LIFETIME_MS,
+                strong: true,
+              });
+            }
           });
+
+          // Subtle "reaction" lines to the recent speakers (except in initial phase, where agents speak independently)
+          if (msg.phase !== "initial") {
+            const recent = recentSpeakersRef.current;
+            const subtleTargets = Array.from(new Set(recent)).filter(
+              (id) => id !== msg.persona_id && !strongTargets.has(id)
+            );
+            subtleTargets.forEach((targetId) => {
+              newConnections.push({
+                id: `reaction-${msg.persona_id}-${targetId}-${connectionIdCounter.current++}`,
+                from: msg.persona_id,
+                to: targetId,
+                expiresAt: now + CONNECTION_LIFETIME_MS,
+                strong: false,
+              });
+            });
+          }
 
           if (newConnections.length > 0) {
             setConnections((prev) => [...prev, ...newConnections]);
@@ -128,7 +134,8 @@ export default function Home() {
           return currentPersonas;
         });
 
-        previousSpeakerRef.current = msg.persona_id;
+        // Add current speaker to recent window (keep last N)
+        recentSpeakersRef.current = [msg.persona_id, ...recentSpeakersRef.current].slice(0, RECENT_SPEAKERS_WINDOW);
         break;
       }
       case "cost_update": {
