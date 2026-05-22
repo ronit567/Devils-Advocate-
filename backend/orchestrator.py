@@ -114,16 +114,25 @@ class FocusGroupOrchestrator:
             "avatar_color": persona.avatar_color,
         }))
 
+        # Phase 1 runs each agent in isolation to prevent convergence collapse
+        # (LLMs anchor to prior conversation; private opinions stay independent).
+        private_mode = phase == Phase.initial
+        history_for_call: list[Message] = [] if private_mode else self.history
+        # Structural dissenters get the "find what's wrong" override in phases 2-3.
+        is_dissenter = persona.id in self.dissenter_ids and phase != Phase.initial
+
         full_content = ""
         buffer = ""
         last_flush = time.monotonic()
         async for token in call_agent(
             persona=persona,
             product_brief=self.product_brief,
-            history=self.history,
+            history=history_for_call,
             phase=phase,
             round_num=round_num,
             is_provocateur=is_provocateur,
+            is_dissenter=is_dissenter,
+            private_mode=private_mode,
         ):
             full_content += token
             buffer += token
