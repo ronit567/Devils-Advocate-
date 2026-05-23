@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import FocusGroupSettingsPanel from "./FocusGroupSettingsPanel";
-import PendingPersonaCard from "./PendingPersonaCard";
 import { FocusGroupSettings } from "../lib/focusGroupSettings";
-import { BuilderSource, PendingPersonaJob } from "../lib/personaBuilders";
+import { BuilderSource } from "../lib/personaBuilders";
 
 const API_BASE = "http://localhost:8000";
 
@@ -90,18 +89,14 @@ const emptyForm = (color: string): FormState => ({
 interface PersonasPanelProps {
   settings: FocusGroupSettings;
   onSettingsChange: (s: FocusGroupSettings) => void;
-  pendingJobs: PendingPersonaJob[];
   onAddPendingJob: (source: BuilderSource, description: string, avatarColor: string) => void;
-  onCancelPendingJob: (id: string) => void;
   refreshTrigger: number;
 }
 
 export default function PersonasPanel({
   settings,
   onSettingsChange,
-  pendingJobs,
   onAddPendingJob,
-  onCancelPendingJob,
   refreshTrigger,
 }: PersonasPanelProps) {
   const [defaults, setDefaults] = useState<Persona[]>([]);
@@ -110,7 +105,6 @@ export default function PersonasPanel({
   const [form, setForm] = useState<FormState>(() => emptyForm(COLOR_PALETTE[0]));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [autoDescription, setAutoDescription] = useState("");
   const [autoError, setAutoError] = useState<string | null>(null);
 
   const usedColors = new Set([...defaults, ...custom].map((p) => p.avatar_color));
@@ -132,13 +126,24 @@ export default function PersonasPanel({
 
   const handleAutoBuild = (source: BuilderSource) => {
     setAutoError(null);
-    const desc = autoDescription.trim();
+    // Build a description from whatever the user has filled in so far
+    const parts: string[] = [];
+    if (form.age) parts.push(`${form.age}-year-old`);
+    if (form.occupation.trim()) parts.push(form.occupation.trim());
+    if (form.location.trim() && form.location.trim() !== "Various") parts.push(`in ${form.location.trim()}`);
+    if (form.income_bracket) parts.push(`${form.income_bracket}-income`);
+    if (form.archetype.trim()) parts.push(`archetype: ${form.archetype.trim().replace(/_/g, " ")}`);
+    if (form.tech_comfort) parts.push(`tech comfort ${form.tech_comfort}/5`);
+    if (form.pain_points.trim()) parts.push(`pain points: ${form.pain_points.trim()}`);
+    if (form.motivations.trim()) parts.push(`motivations: ${form.motivations.trim()}`);
+    if (form.communication_style.trim()) parts.push(form.communication_style.trim());
+
+    const desc = parts.join(". ");
     if (desc.length < 10) {
-      setAutoError("Add a few more words so the build has something to work with");
+      setAutoError("Fill in at least an occupation, archetype, or a few traits to seed the build");
       return;
     }
-    onAddPendingJob(source, desc, randomColor(usedColors));
-    setAutoDescription("");
+    onAddPendingJob(source, desc, form.avatar_color);
     setShowForm(false);
   };
 
@@ -262,11 +267,9 @@ export default function PersonasPanel({
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Persona library</h2>
+            <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Custom personas</h2>
             <p className="text-[13px] text-slate-500 mt-1">
-              <span className="font-mono tabular-nums">{defaults.length}</span> default
-              {custom.length > 0 && <> + <span className="font-mono tabular-nums">{custom.length}</span> custom</>}.
-              The focus group picks from this pool.
+              Add your own personas to the focus group pool. They run alongside the {defaults.length} built-in agents.
             </p>
           </div>
           <button
@@ -485,33 +488,20 @@ export default function PersonasPanel({
           </form>
         )}
 
-        {/* Custom personas (including any in-flight builds) */}
-        {(custom.length > 0 || pendingJobs.length > 0) && (
+        {/* Custom personas */}
+        {custom.length > 0 ? (
           <section>
-            <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-3">
-              Your custom personas
-              {pendingJobs.length > 0 && (
-                <span className="ml-2 text-slate-400 normal-case font-mono tabular-nums">
-                  · {pendingJobs.length} building
-                </span>
-              )}
-            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {pendingJobs.map((job) => (
-                <PendingPersonaCard key={job.id} job={job} onCancel={() => onCancelPendingJob(job.id)} />
-              ))}
               {custom.map((p) => renderCard(p, true))}
             </div>
           </section>
-        )}
-
-        {/* Default personas */}
-        <section>
-          <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-3">Default pack</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {defaults.map((p) => renderCard(p, false))}
+        ) : (
+          <div className="border border-dashed border-slate-200 rounded-md p-12 text-center">
+            <p className="text-[13px] text-slate-500">
+              No custom personas yet. Click <span className="font-medium text-slate-700">New persona</span> to add one.
+            </p>
           </div>
-        </section>
+        )}
       </div>
     </div>
   );

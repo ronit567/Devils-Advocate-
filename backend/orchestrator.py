@@ -30,18 +30,28 @@ class FocusGroupOrchestrator:
         self.history: list[Message] = []
         self.turn_count = 0
         self.total_cost = 0.0
+        # When set, the orchestrator returns early after the current turn.
+        # The wrapper in main.py still runs insight extraction on whatever
+        # transcript exists at that point.
+        self.stop_requested = False
         # Assign ~25% of personas (min 1) as structural dissenters.
         # Their role is to counter the LLM agreement bias during debate/synthesis,
         # regardless of what their persona would naturally feel.
         n_dissenters = max(1, len(personas) // 4)
         self.dissenter_ids: set[str] = {p.id for p in random.sample(personas, n_dissenters)}
 
+    def request_stop(self) -> None:
+        self.stop_requested = True
+
     async def run(self):
         try:
             await self._run_phase(Phase.initial, rounds=1)
-            await self._run_phase(Phase.debate, rounds=5)
-            await self._run_phase(Phase.synthesis, rounds=1)
-            await self._emit(WSEvent(type="phase_change", data={"phase": "complete", "message": "Focus group complete. Extracting insights..."}))
+            if not self.stop_requested:
+                await self._run_phase(Phase.debate, rounds=5)
+            if not self.stop_requested:
+                await self._run_phase(Phase.synthesis, rounds=1)
+            label = "Focus group stopped early. Extracting insights from partial transcript..." if self.stop_requested else "Focus group complete. Extracting insights..."
+            await self._emit(WSEvent(type="phase_change", data={"phase": "complete", "message": label, "stopped_early": self.stop_requested}))
         except Exception as e:
             await self._emit(WSEvent(type="error", data={"message": str(e)}))
             raise
@@ -55,8 +65,12 @@ class FocusGroupOrchestrator:
         await self._emit(WSEvent(type="phase_change", data={"phase": phase.value, "label": phase_labels[phase]}))
 
         for round_num in range(rounds):
+            if self.stop_requested:
+                return
             speakers = self._select_speakers_for_round(phase, round_num)
             for persona, is_provocateur in speakers:
+                if self.stop_requested:
+                    return
                 await self._run_turn(persona, phase, round_num, is_provocateur)
                 # Small pause between turns for natural pacing
                 await asyncio.sleep(0.1)

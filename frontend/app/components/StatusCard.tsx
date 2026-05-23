@@ -10,6 +10,7 @@ interface Props {
   completedTurns: Set<string>;
   typingPersonaId: string | null;
   turnCount: number;
+  onStop?: () => void;
 }
 
 const PHASE_INFO: Record<string, { label: string; description: string }> = {
@@ -28,6 +29,7 @@ export default function StatusCard({
   completedTurns,
   typingPersonaId,
   turnCount,
+  onStop,
 }: Props) {
   if (!isRunning && !isExtracting && !phase) return null;
 
@@ -81,6 +83,19 @@ export default function StatusCard({
             />
           </div>
         </div>
+      )}
+
+      {/* Stop the active run — insights extract from whatever transcript exists */}
+      {isRunning && !isExtracting && onStop && (
+        <button
+          onClick={onStop}
+          className="w-full h-7 rounded-md text-[11px] font-semibold border border-slate-200 text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center justify-center gap-1.5"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="1" />
+          </svg>
+          Stop & analyze
+        </button>
       )}
     </div>
   );

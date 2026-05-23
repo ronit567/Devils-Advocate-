@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FocusGroupSettings, ModelChoice, PoolChoice } from "../lib/focusGroupSettings";
 
 interface Persona {
@@ -67,6 +69,159 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     >
       {children}
     </button>
+  );
+}
+
+// Multi-select dropdown: button shows the count, popover with checkboxes,
+// selected items appear as removable chips below. Built inline because the
+// only place it's used right now is for the archetype filter.
+function MultiSelectDropdown({
+  options, selected, onChange, placeholder, formatOption,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  placeholder: string;
+  formatOption?: (v: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const [mounted, setMounted] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  // Position popover under the trigger button (uses fixed positioning via portal,
+  // so it floats above all overflow-hidden ancestors)
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const measure = () => {
+      const rect = triggerRef.current!.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    };
+    measure();
+    // Close on scroll/resize rather than try to track — simpler and standard
+    const onScrollOrResize = () => setOpen(false);
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const fmt = formatOption ?? ((v: string) => v);
+  const label = selected.length === 0 ? placeholder : `${selected.length} selected`;
+
+  const popover = open && mounted ? (
+    <div
+      ref={popoverRef}
+      style={{
+        position: "fixed",
+        top: pos.top,
+        left: pos.left,
+        width: pos.width,
+        zIndex: 1000,
+      }}
+      className="bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto py-1"
+    >
+      {options.map((opt) => {
+        const isChecked = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(isChecked ? selected.filter((x) => x !== opt) : [...selected, opt])}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[12px] text-left hover:bg-slate-50 transition-colors"
+          >
+            <span
+              className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                isChecked ? "bg-slate-900 border-slate-900" : "bg-white border-slate-300"
+              }`}
+            >
+              {isChecked && (
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </span>
+            <span className="text-slate-700">{fmt(opt)}</span>
+          </button>
+        );
+      })}
+      {selected.length > 0 && (
+        <>
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="w-full text-left px-2.5 py-1.5 text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+          >
+            Clear all
+          </button>
+        </>
+      )}
+    </div>
+  ) : null;
+
+  return (
+    <div>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] text-left hover:border-slate-400 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/5 transition-colors"
+      >
+        <span className={selected.length === 0 ? "text-slate-400" : "text-slate-900 font-medium"}>
+          {label}
+        </span>
+        <svg
+          width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          className={`text-slate-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {mounted && popover && createPortal(popover, document.body)}
+
+      {selected.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {selected.map((s) => (
+            <span
+              key={s}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-900 text-white"
+            >
+              {fmt(s)}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onChange(selected.filter((x) => x !== s)); }}
+                className="text-slate-300 hover:text-white"
+                aria-label={`Remove ${fmt(s)}`}
+              >
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -231,17 +386,13 @@ export default function FocusGroupSettingsPanel({ settings, onChange, allPersona
           <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">
             Archetypes <span className="text-slate-400 normal-case">(leave blank for all)</span>
           </label>
-          <div className="flex flex-wrap gap-1.5">
-            {archetypeSet.map((a) => (
-              <Chip
-                key={a}
-                active={settings.archetypes.includes(a)}
-                onClick={() => set({ archetypes: toggle(settings.archetypes, a) })}
-              >
-                {a.replace(/_/g, " ")}
-              </Chip>
-            ))}
-          </div>
+          <MultiSelectDropdown
+            options={archetypeSet}
+            selected={settings.archetypes}
+            onChange={(next) => set({ archetypes: next })}
+            placeholder="Any archetype"
+            formatOption={(v) => v.replace(/_/g, " ")}
+          />
         </div>
       </div>
     </div>

@@ -107,6 +107,20 @@ export interface BriefAttachment {
   media_type?: string;
 }
 
+// A snapshot of a finished (or stopped-early) focus group, kept in memory so
+// the user can revisit it after starting a new run.
+export interface SavedRun {
+  id: string;                // session_id
+  brief: string;             // first ~80 chars of the product brief
+  startedAt: number;
+  finishedAt: number;
+  stoppedEarly: boolean;
+  personas: PersonaInfo[];
+  messages: AgentMessage[];
+  insights: InsightReport | null;
+  totalCost: number;
+}
+
 export interface WSEvent {
   type: WSEventType;
   data: Record<string, unknown>;

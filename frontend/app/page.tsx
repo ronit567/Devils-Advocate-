@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AgentMessage, InsightReport, WSEvent, Phase, PersonaInfo, StructuredBrief, BriefAttachment } from "./lib/types";
+import { AgentMessage, InsightReport, WSEvent, Phase, PersonaInfo, StructuredBrief, BriefAttachment, SavedRun } from "./lib/types";
 import { FocusGroupWS } from "./lib/websocket";
 import ProductBriefForm from "./components/ProductBriefForm";
 import FocusGraph from "./components/FocusGraph";
@@ -11,6 +11,8 @@ import SentimentMap from "./components/SentimentMap";
 import PhaseIndicator from "./components/PhaseIndicator";
 import StatusCard from "./components/StatusCard";
 import PersonasPanel from "./components/PersonasPanel";
+import BuildQueuePanel from "./components/BuildQueuePanel";
+import SavedRunsPanel from "./components/SavedRunsPanel";
 import {
   DEFAULT_SETTINGS,
   FocusGroupSettings,
@@ -53,6 +55,9 @@ export default function Home() {
   const [settings, setSettings] = useState<FocusGroupSettings>(DEFAULT_SETTINGS);
   const [pendingJobs, setPendingJobs] = useState<PendingPersonaJob[]>([]);
   const [personaRefreshTrigger, setPersonaRefreshTrigger] = useState(0);
+  const [savedRuns, setSavedRuns] = useState<SavedRun[]>([]);
+  const [viewingRunId, setViewingRunId] = useState<string | null>(null);
+  const currentSessionRef = useRef<{ id: string; brief: string; startedAt: number } | null>(null);
 
   // Hydrate settings from localStorage on mount (client-only)
   useEffect(() => {
@@ -73,6 +78,14 @@ export default function Home() {
   useEffect(() => {
     personasRef.current = personas;
   }, [personas]);
+
+  // Refs that mirror live state — used when snapshotting a run on completion
+  const messagesRef = useRef<AgentMessage[]>([]);
+  const insightsRef = useRef<InsightReport | null>(null);
+  const costRef = useRef<number>(0);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { insightsRef.current = insights; }, [insights]);
+  useEffect(() => { costRef.current = totalCost; }, [totalCost]);
 
   const DEFAULT_RECENT_WINDOW = 3;
   const GROUP_PRONOUNS = [
@@ -248,6 +261,31 @@ export default function Home() {
         setIsRunning(false);
         setCurrentPhase("complete");
         setIsExtracting(false);
+
+        // Snapshot the run so it's accessible after starting a new one.
+        // We read insights/messages/personas/cost from the latest state via
+        // a microtask so all preceding setState calls have flushed.
+        const session = currentSessionRef.current;
+        const stoppedEarly = Boolean((event.data as Record<string, unknown>)?.stopped_early);
+        if (session) {
+          setTimeout(() => {
+            setSavedRuns((prev) => {
+              if (prev.some((r) => r.id === session.id)) return prev;  // already snapshot
+              const snapshot: SavedRun = {
+                id: session.id,
+                brief: session.brief,
+                startedAt: session.startedAt,
+                finishedAt: Date.now(),
+                stoppedEarly,
+                personas: personasRef.current,
+                messages: messagesRef.current,
+                insights: insightsRef.current,
+                totalCost: costRef.current,
+              };
+              return [snapshot, ...prev];
+            });
+          }, 0);
+        }
         break;
       }
       case "error": {
@@ -290,6 +328,9 @@ export default function Home() {
       });
       const { session_id } = await res.json();
 
+      // Track the live session for snapshotting on complete
+      currentSessionRef.current = { id: session_id, brief, startedAt: Date.now() };
+      setViewingRunId(null);  // make sure we're not viewing a past run when a new one starts
       setIsRunning(true);
 
       const ws = new FocusGroupWS(session_id, handleEvent);
@@ -300,9 +341,39 @@ export default function Home() {
     }
   }, [handleEvent, settings]);
 
-  const visiblePersonas = personas.length > 0
-    ? personas
-    : Array.from(new Map(messages.map((m) => [m.persona_id, { id: m.persona_id, name: m.persona_name, avatar_color: m.avatar_color }])).values());
+  const handleStop = useCallback(async () => {
+    const session = currentSessionRef.current;
+    if (!session) return;
+    try {
+      await fetch(`${API_BASE}/session/${session.id}/stop`, { method: "POST" });
+    } catch (e) {
+      console.error("Failed to stop session", e);
+    }
+  }, []);
+
+  // When viewingRunId is set, swap the main panel to render that saved snapshot
+  // instead of the live state. The sidebar form/status stay tied to the live run.
+  const viewingRun = viewingRunId ? savedRuns.find((r) => r.id === viewingRunId) ?? null : null;
+  const viewPersonas = viewingRun ? viewingRun.personas : personas;
+  const viewMessages = viewingRun ? viewingRun.messages : messages;
+  const viewInsights = viewingRun ? viewingRun.insights : insights;
+  const viewStreamingMessage = viewingRun ? null : streamingMessage;
+  const viewTypingPersonaId = viewingRun ? null : typingPersonaId;
+  const viewConnections = viewingRun ? [] : connections;
+  const viewCompletedTurns = viewingRun
+    ? new Set(viewingRun.messages.map((m) => m.persona_id))
+    : completedTurns;
+  const viewPhase: Phase | null = viewingRun ? "complete" : currentPhase;
+  const viewIsExtracting = viewingRun ? false : isExtracting;
+
+  const visiblePersonas = viewPersonas.length > 0
+    ? viewPersonas
+    : Array.from(new Map(viewMessages.map((m) => [m.persona_id, { id: m.persona_id, name: m.persona_name, avatar_color: m.avatar_color }])).values());
+
+  const deleteSavedRun = (id: string) => {
+    setSavedRuns((prev) => prev.filter((r) => r.id !== id));
+    if (viewingRunId === id) setViewingRunId(null);
+  };
 
   return (
     <div className="flex h-screen bg-white text-slate-900 overflow-hidden">
@@ -332,6 +403,16 @@ export default function Home() {
             completedTurns={completedTurns}
             typingPersonaId={typingPersonaId}
             turnCount={messages.length}
+            onStop={handleStop}
+          />
+
+          <SavedRunsPanel
+            runs={savedRuns}
+            viewingRunId={viewingRunId}
+            onViewRun={(id) => setViewingRunId(id)}
+            onReturnToActive={() => setViewingRunId(null)}
+            onDeleteRun={deleteSavedRun}
+            hasActiveRun={isRunning || isExtracting}
           />
         </div>
 
@@ -351,12 +432,26 @@ export default function Home() {
 
       {/* Main panel */}
       <main className="flex-1 flex flex-col overflow-hidden bg-white">
+        {viewingRun && (
+          <div className="h-9 px-6 flex items-center gap-3 border-b border-slate-200 bg-amber-50">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="text-[12px] text-amber-900">
+              Viewing saved run · <span className="font-medium">{viewingRun.brief.slice(0, 60)}{viewingRun.brief.length > 60 ? "…" : ""}</span>
+            </span>
+            <button
+              onClick={() => setViewingRunId(null)}
+              className="ml-auto text-[11px] font-medium text-amber-900 hover:text-amber-700 underline-offset-2 hover:underline"
+            >
+              Return to live
+            </button>
+          </div>
+        )}
         <PhaseIndicator
-          phase={currentPhase}
+          phase={viewPhase}
           personas={visiblePersonas}
-          completedTurns={completedTurns}
-          typingPersonaId={typingPersonaId}
-          turnCount={messages.length}
+          completedTurns={viewCompletedTurns}
+          typingPersonaId={viewTypingPersonaId}
+          turnCount={viewMessages.length}
         />
 
         {/* Tabs */}
@@ -373,9 +468,9 @@ export default function Home() {
             >
               <span className="inline-flex items-center gap-1.5">
                 {tab}
-                {tab === "insights" && insights && (
+                {tab === "insights" && viewInsights && (
                   <span className="text-[10px] font-mono tabular-nums bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                    {insights.non_obvious_insights.length}
+                    {viewInsights.non_obvious_insights.length}
                   </span>
                 )}
               </span>
@@ -391,25 +486,25 @@ export default function Home() {
           {activeTab === "graph" && (
             <div className="flex-1 flex overflow-hidden">
               <FocusGraph
-                personas={personas}
-                typingPersonaId={typingPersonaId}
-                connections={connections}
+                personas={viewPersonas}
+                typingPersonaId={viewTypingPersonaId}
+                connections={viewConnections}
               />
               <TranscriptPanel
-                messages={messages}
-                streamingMessage={streamingMessage}
-                personas={personas}
+                messages={viewMessages}
+                streamingMessage={viewStreamingMessage}
+                personas={viewPersonas}
               />
             </div>
           )}
 
           {activeTab === "insights" && (
-            <InsightPanel insights={insights} isLoading={isExtracting} />
+            <InsightPanel insights={viewInsights} isLoading={viewIsExtracting} />
           )}
 
           {activeTab === "sentiment" && (
             <div className="flex-1 overflow-y-auto p-8">
-              <SentimentMap sentiments={insights?.agent_sentiments ?? []} />
+              <SentimentMap sentiments={viewInsights?.agent_sentiments ?? []} />
             </div>
           )}
 
@@ -417,14 +512,15 @@ export default function Home() {
             <PersonasPanel
               settings={settings}
               onSettingsChange={setSettings}
-              pendingJobs={pendingJobs}
               onAddPendingJob={addPendingJob}
-              onCancelPendingJob={cancelPendingJob}
               refreshTrigger={personaRefreshTrigger}
             />
           )}
         </div>
       </main>
+
+      {/* Floating build queue — visible from every tab while jobs are pending */}
+      <BuildQueuePanel jobs={pendingJobs} onCancel={cancelPendingJob} />
     </div>
   );
 }

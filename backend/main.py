@@ -92,6 +92,18 @@ async def get_status(session_id: str):
     return {"status": session["status"], "turn_count": len(session["history"])}
 
 
+@app.post("/session/{session_id}/stop")
+async def stop_session(session_id: str):
+    """Request an early stop. The orchestrator returns after its current turn,
+    then insight extraction runs on whatever transcript exists."""
+    session = _get_session(session_id)
+    orchestrator = session.get("orchestrator")
+    if orchestrator is None:
+        raise HTTPException(status_code=400, detail="Session has no active orchestrator")
+    orchestrator.request_stop()
+    return {"ok": True, "stopped": True}
+
+
 @app.websocket("/session/{session_id}/stream")
 async def websocket_stream(websocket: WebSocket, session_id: str):
     await websocket.accept()
@@ -134,6 +146,8 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
         attachments=session.get("attachments", []),
         model_override=session.get("model"),
     )
+    # Store on the session so /stop can reach it
+    session["orchestrator"] = orchestrator
 
     # Run orchestration in background
     async def run_orchestration():
@@ -142,7 +156,13 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
             session["history"] = orchestrator.history
             session["status"] = SessionStatus.extracting
 
-            # Extract insights
+            # Skip extraction when there's almost nothing to analyze (e.g. user
+            # hit Stop before any agents spoke). Still mark the run complete.
+            if len(orchestrator.history) < 2:
+                session["status"] = SessionStatus.complete
+                await ws_queue.put({"type": "complete", "data": {"stopped_early": True, "no_insights": True}})
+                return
+
             insights = await extract_insights(
                 product_brief=session["product_brief"],
                 history=orchestrator.history,
@@ -155,7 +175,10 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
                 "type": "insights_ready",
                 "data": insights.model_dump(),
             })
-            await ws_queue.put({"type": "complete", "data": {}})
+            await ws_queue.put({
+                "type": "complete",
+                "data": {"stopped_early": orchestrator.stop_requested},
+            })
         except Exception as e:
             session["status"] = SessionStatus.error
             await ws_queue.put({"type": "error", "data": {"message": str(e)}})

@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "id": "custom_ronit__mpij8qdv",
+    "name": "Ronit",
+    "age": 34,
+    "occupation": "Nurse",
+    "location": "Various",
+    "income_bracket": "middle",
+    "archetype": "pragmatic_skeptic",
+    "tech_comfort": 3,
+    "pain_points": [],
+    "motivations": [],
+    "communication_style": "Very Skeptic",
+    "likely_objections": [],
+    "avatar_color": "#50E3C2"
+  }
+]
