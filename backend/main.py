@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Synthetic Focus Group API", lifespan=lifespan)
+app = FastAPI(title="Devil's Advocate API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

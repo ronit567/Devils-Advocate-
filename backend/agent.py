@@ -31,25 +31,39 @@ def _build_system_prompt(persona: Persona) -> str:
 def _build_phase_instruction(phase: Phase, round_num: int, is_provocateur: bool, is_dissenter: bool = False) -> str:
     if phase == Phase.initial:
         return (
-            "Give your honest first reaction to this product idea. Share your gut feeling — the first concern or excitement that comes to mind. "
-            "This is YOUR view, formed before hearing anyone else. Don't hedge. Don't think about what others would say."
+            "Imagine someone just showed you this product and asked: would you use it? "
+            "React from your own life — not as an expert, but as someone deciding whether this belongs in your daily routine. "
+            "What's your gut? Would you actually use it? In what specific situation? What worries you about it? "
+            "This is YOUR view, formed privately before anyone else speaks. Don't hedge. Talk about your own life — your job, your home, your habits. Avoid any business or strategy talk."
         )
     elif phase == Phase.debate:
         if is_dissenter:
             return (
-                "Your role in this discussion is the structural skeptic. Your job is to find what's wrong with this idea — flaws, failure modes, hidden costs, edge cases others are glossing over. "
-                "Do this REGARDLESS of how your persona would normally feel. Even if you'd naturally be excited about this product, in THIS conversation your job is to challenge it. "
-                "React to specific claims people have made. Name them. Push back hard but fairly — don't be contrarian for sport, actively look for the cracks."
+                "Your role here is to be the customer who would NOT use this product. Whatever your persona would normally feel, in this conversation you're the holdout. "
+                "Push back on what others have said — but from a CUSTOMER's seat, not a strategist's. Talk about why YOU personally wouldn't use it: it doesn't fit your life, you don't trust it, it costs too much for what you'd get, you already have something that works, your family would think it's weird, you tried something like it and it failed for you. "
+                "Address specific people by name. Be concrete about your own life. Do NOT critique the business model or market — react like a real human being who isn't sold on this."
             )
         if is_provocateur:
-            return "The last few speakers seem to be reaching agreement. Push back — find the flaw, the edge case, or the concern that your persona would notice that others are glossing over. Be specific."
-        return "React to what others have said. You can agree, disagree, or build on a point. If someone said something that resonated or bothered you, address it directly by name."
+            return (
+                "The last few speakers seem to be agreeing. Push back from your own life — a moment where this wouldn't work for you, a hassle they're glossing over, a reason YOU personally wouldn't use it. "
+                "Address whoever you're reacting to by name. Be specific to your own routine, not abstract."
+            )
+        return (
+            "React to what others have said. Agree if you genuinely would; push back if you wouldn't. "
+            "Talk about your OWN life — when you'd use this, when you wouldn't, what you'd compare it to, what you've tried before that worked or didn't. "
+            "If someone said something that resonated or bothered you, address them by name. "
+            "You're a customer in a focus group, not a business analyst. No strategy talk."
+        )
     elif phase == Phase.synthesis:
         if is_dissenter:
             return (
-                "Give your final verdict, but lead with the reasons this product might fail. Even if your persona would normally be enthusiastic, your structural role here is to surface what could go wrong, who it won't work for, and what's being overlooked. Be direct."
+                "Give your final answer as the customer who wouldn't buy this. Lead with the personal reasons it doesn't fit your life. "
+                "What would have to change about the PRODUCT (not the marketing or business) for you to actually try it? Be direct, talk about yourself, not the market."
             )
-        return "Give your final verdict. Would you use this product? What would need to change for you to say yes (or stay yes)? Be direct."
+        return (
+            "Give your final answer. Would you actually use this product? How often? What would you pay for it? "
+            "If yes, what specifically about your life makes it a fit. If no, what would need to change about the product itself to flip you. Be direct and personal."
+        )
     return ""
 
 

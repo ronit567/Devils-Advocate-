@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SynthFocus — AI Focus Groups",
-  description: "Synthetic customer focus groups powered by AI",
+  title: "Devil's Advocate — AI Focus Groups",
+  description: "Synthetic customer focus groups that push back on your ideas",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full flex flex-col bg-gray-950">{children}</body>
+      <body className="h-full flex flex-col bg-white">{children}</body>
     </html>
   );
 }
