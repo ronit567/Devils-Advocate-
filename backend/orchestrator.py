@@ -37,7 +37,7 @@ class FocusGroupOrchestrator:
     async def run(self):
         try:
             await self._run_phase(Phase.initial, rounds=1)
-            await self._run_phase(Phase.debate, rounds=3)
+            await self._run_phase(Phase.debate, rounds=5)
             await self._run_phase(Phase.synthesis, rounds=1)
             await self._emit(WSEvent(type="phase_change", data={"phase": "complete", "message": "Focus group complete. Extracting insights..."}))
         except Exception as e:
