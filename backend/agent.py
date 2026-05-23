@@ -148,6 +148,7 @@ async def call_agent(
     private_mode: bool = False,
     structured: dict | None = None,
     attachments: list[dict] | None = None,
+    model_override: str | None = None,
 ) -> str:
     system_prompt = _build_system_prompt(persona)
     phase_instruction = _build_phase_instruction(phase, round_num, is_provocateur, is_dissenter)
