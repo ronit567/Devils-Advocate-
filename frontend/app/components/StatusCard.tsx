@@ -13,10 +13,10 @@ interface Props {
 }
 
 const PHASE_INFO: Record<string, { label: string; description: string }> = {
-  initial: { label: "Initial Reactions", description: "Each agent shares their first impression" },
-  debate: { label: "Open Debate", description: "Agents argue, disagree, and challenge each other" },
-  synthesis: { label: "Final Verdicts", description: "Each agent gives their bottom-line take" },
-  extracting: { label: "Extracting Insights", description: "Analyzing the conversation" },
+  initial: { label: "Initial reactions", description: "Each agent gives their gut take in private" },
+  debate: { label: "Open debate", description: "Agents argue, push back, build on each other" },
+  synthesis: { label: "Final verdicts", description: "Each agent gives a bottom-line answer" },
+  extracting: { label: "Extracting insights", description: "Analyzing the conversation" },
   complete: { label: "Complete", description: "Focus group finished" },
 };
 
@@ -36,52 +36,47 @@ export default function StatusCard({
   const typingPersona = typingPersonaId ? personas.find((p) => p.id === typingPersonaId) : null;
 
   return (
-    <div className="px-4 py-3 border-b border-gray-200 bg-white">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${isRunning || isExtracting ? "bg-emerald-500 animate-pulse" : "bg-gray-300"}`} />
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+    <div className="border-t border-slate-200 bg-white px-5 py-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className={`w-1.5 h-1.5 rounded-full ${isRunning || isExtracting ? "bg-emerald-500 animate-pulse" : "bg-slate-300"}`} />
+        <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
           {isExtracting ? "Analyzing" : isRunning ? "Live" : "Status"}
-        </h3>
+        </span>
       </div>
 
       {info && (
-        <>
-          <div className="text-sm font-semibold text-gray-900 leading-tight mb-0.5">
+        <div>
+          <div className="text-[13px] font-semibold text-slate-900 leading-tight">
             {info.label}
           </div>
-          <div className="text-[11px] text-gray-500 mb-3 leading-snug">{info.description}</div>
-        </>
-      )}
-
-      {/* Speaking now */}
-      {typingPersona && (
-        <div className="flex items-center gap-2 mb-3 px-2.5 py-1.5 rounded-md bg-gray-50 border border-gray-200">
-          <div
-            className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse"
-            style={{ backgroundColor: typingPersona.avatar_color }}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-wider font-medium text-gray-400">Speaking</div>
-            <div className="text-xs font-medium text-gray-800 truncate">
-              {typingPersona.name} <span className="text-gray-400 font-normal">· {typingPersona.archetype.replace(/_/g, " ")}</span>
-            </div>
-          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{info.description}</div>
         </div>
       )}
 
-      {/* Progress */}
+      {typingPersona && (
+        <div className="flex items-center gap-2">
+          <div
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse"
+            style={{ backgroundColor: typingPersona.avatar_color }}
+          />
+          <span className="text-[11px] text-slate-500 truncate">
+            <span className="font-medium text-slate-800">{typingPersona.name}</span> speaking
+          </span>
+        </div>
+      )}
+
       {personas.length > 0 && (
         <div>
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-[11px] text-gray-500">Turn</span>
-            <span className="text-[11px] font-mono text-gray-700">
+            <span className="text-[10px] text-slate-400 font-mono tabular-nums uppercase tracking-wider">Progress</span>
+            <span className="text-[11px] font-mono tabular-nums text-slate-700">
               <span className="font-semibold">{turnCount}</span>
-              <span className="text-gray-400"> · {personas.length} agents</span>
+              <span className="text-slate-400"> / {personas.length}</span>
             </span>
           </div>
-          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+              className="h-full bg-slate-900 transition-all duration-500"
               style={{ width: `${Math.min(100, Math.round(progress * 100))}%` }}
             />
           </div>

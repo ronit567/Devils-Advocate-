@@ -174,14 +174,14 @@ export default function PersonasPanel() {
   };
 
   const renderCard = (p: Persona, isCustom: boolean) => (
-    <div key={p.id} className="relative bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors">
+    <div key={p.id} className="group relative bg-white border border-slate-200 rounded-md p-3 hover:border-slate-300 hover:shadow-sm transition-all">
       {isCustom && (
         <button
           onClick={() => deletePersona(p.id)}
-          className="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition-colors"
+          className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
           aria-label="Delete persona"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -189,23 +189,23 @@ export default function PersonasPanel() {
       )}
       <div className="flex items-start gap-3">
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold text-white flex-shrink-0"
           style={{ backgroundColor: p.avatar_color }}
         >
           {p.name[0]}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <div className="text-sm font-semibold text-gray-900">{p.name}</div>
-            <div className="text-xs text-gray-500">{p.age}</div>
+            <div className="text-[13px] font-semibold text-slate-900">{p.name}</div>
+            <div className="text-[11px] text-slate-400 font-mono tabular-nums">{p.age}</div>
             {isCustom && (
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
+              <span className="text-[9px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-900 text-white">
                 Custom
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-600 truncate">{p.occupation}</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">
+          <div className="text-[12px] text-slate-600 truncate">{p.occupation}</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
             {p.location} · {p.archetype.replace(/_/g, " ")}
           </div>
         </div>
@@ -215,37 +215,39 @@ export default function PersonasPanel() {
 
   return (
     <div className="overflow-y-auto h-full bg-white">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-8 py-8 space-y-8">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Persona Library</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {defaults.length} default + {custom.length} custom personas. The focus group picks from this pool.
+            <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Persona library</h2>
+            <p className="text-[13px] text-slate-500 mt-1">
+              <span className="font-mono tabular-nums">{defaults.length}</span> default
+              {custom.length > 0 && <> + <span className="font-mono tabular-nums">{custom.length}</span> custom</>}.
+              The focus group picks from this pool.
             </p>
           </div>
           <button
             onClick={openForm}
             disabled={showForm}
-            className="px-3 py-1.5 rounded-md text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 h-9 rounded-md text-[13px] font-semibold bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            New Persona
+            New persona
           </button>
         </div>
 
         {/* Add form */}
         {showForm && (
-          <form onSubmit={submit} className="border border-purple-200 bg-purple-50/30 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-semibold text-gray-900">New custom persona</h3>
+          <form onSubmit={submit} className="border border-slate-200 bg-slate-50/50 rounded-md p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[14px] font-semibold text-slate-900">New custom persona</h3>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="text-xs text-gray-500 hover:text-gray-800"
+                className="text-[12px] text-slate-500 hover:text-slate-900"
               >
                 Cancel
               </button>
@@ -385,22 +387,22 @@ export default function PersonasPanel() {
               </div>
             </Field>
 
-            {error && <div className="text-xs text-red-600">{error}</div>}
+            {error && <div className="text-[12px] text-rose-600">{error}</div>}
 
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900"
+                className="px-3 h-8 text-[12px] font-medium text-slate-600 hover:text-slate-900"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-1.5 rounded-md text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                className="px-4 h-8 rounded-md text-[12px] font-semibold bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-40 transition-colors"
               >
-                {submitting ? "Saving..." : "Save Persona"}
+                {submitting ? "Saving..." : "Save persona"}
               </button>
             </div>
           </form>
@@ -409,7 +411,7 @@ export default function PersonasPanel() {
         {/* Custom personas */}
         {custom.length > 0 && (
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Your custom personas</h3>
+            <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-3">Your custom personas</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {custom.map((p) => renderCard(p, true))}
             </div>
@@ -418,7 +420,7 @@ export default function PersonasPanel() {
 
         {/* Default personas */}
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Default pack</h3>
+          <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-3">Default pack</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {defaults.map((p) => renderCard(p, false))}
           </div>
@@ -429,12 +431,12 @@ export default function PersonasPanel() {
 }
 
 const inputClass =
-  "w-full bg-white border border-gray-300 rounded-md px-2.5 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500";
+  "w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/5 transition-colors";
 
 function Field({ label, children, colSpan }: { label: string; children: React.ReactNode; colSpan?: number }) {
   return (
     <div className={colSpan === 2 ? "col-span-2" : ""}>
-      <label className="block text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1">
+      <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-1">
         {label}
       </label>
       {children}

@@ -222,32 +222,30 @@ export default function Home() {
     }
   }, [handleEvent]);
 
-  const savings = totalCost > 0 ? Math.max(0, 100 - (totalCost / 15000) * 100) : 0;
+  const visiblePersonas = personas.length > 0
+    ? personas
+    : Array.from(new Map(messages.map((m) => [m.persona_id, { id: m.persona_id, name: m.persona_name, avatar_color: m.avatar_color }])).values());
 
   return (
-    <div className="flex h-screen bg-white text-gray-900 overflow-hidden">
+    <div className="flex h-screen bg-white text-slate-900 overflow-hidden">
       {/* Left panel */}
-      <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 overflow-hidden bg-gray-50">
+      <aside className="w-[300px] flex-shrink-0 flex flex-col border-r border-slate-200 overflow-hidden bg-slate-50/50">
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-sm">
-              <div className="w-2 h-2 rounded-full bg-white" />
+        <div className="h-14 px-5 flex items-center border-b border-slate-200 bg-white">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-gradient-to-br from-indigo-400 to-rose-400" />
             </div>
-            <div>
-              <h1 className="text-base font-bold text-gray-900 tracking-tight leading-none">Devil&apos;s Advocate</h1>
-              <p className="text-[11px] text-gray-500 mt-0.5">AI focus groups that actually push back</p>
-            </div>
+            <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight">Devil&apos;s Advocate</h1>
           </div>
         </div>
 
         {/* Form */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
+          <div className="p-5">
             <ProductBriefForm onSubmit={handleStart} isRunning={isRunning} />
           </div>
 
-          {/* Status card (shown when running or after completion) */}
           <StatusCard
             phase={currentPhase}
             isRunning={isRunning}
@@ -260,24 +258,15 @@ export default function Home() {
         </div>
 
         {/* Cost footer */}
-        <div className="border-t border-gray-200 bg-white px-4 py-3">
-          <div className="flex items-baseline justify-between mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Research cost</span>
-            <span className="text-base font-mono font-bold text-emerald-600">
+        <div className="border-t border-slate-200 bg-white px-5 py-3.5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Cost</span>
+            <span className="text-sm font-mono tabular-nums font-semibold text-slate-900">
               ${totalCost.toFixed(4)}
             </span>
           </div>
-          <div className="h-1 bg-gray-100 rounded-full overflow-hidden mb-1.5">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
-              style={{ width: `${savings.toFixed(2)}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-gray-400">
-            <span>vs $15,000 real focus group</span>
-            <span className="font-semibold text-emerald-600">
-              {savings > 0 ? `${savings.toFixed(2)}% savings` : "—"}
-            </span>
+          <div className="mt-1 text-[11px] text-slate-400">
+            vs $15,000+ for a live focus group
           </div>
         </div>
       </aside>
@@ -286,35 +275,41 @@ export default function Home() {
       <main className="flex-1 flex flex-col overflow-hidden bg-white">
         <PhaseIndicator
           phase={currentPhase}
-          personas={personas.length > 0 ? personas : Array.from(new Map(messages.map((m) => [m.persona_id, { id: m.persona_id, name: m.persona_name, avatar_color: m.avatar_color }])).values())}
+          personas={visiblePersonas}
           completedTurns={completedTurns}
           typingPersonaId={typingPersonaId}
+          turnCount={messages.length}
         />
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 bg-white">
+        <div className="flex border-b border-slate-200 bg-white px-2">
           {(["graph", "insights", "sentiment", "personas"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${
+              className={`relative px-3 h-10 text-[13px] font-medium capitalize transition-colors ${
                 activeTab === tab
-                  ? "text-gray-900 border-b-2 border-purple-500"
-                  : "text-gray-500 hover:text-gray-800"
+                  ? "text-slate-900"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              {tab}
-              {tab === "insights" && insights && (
-                <span className="ml-1.5 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded-full">
-                  {insights.non_obvious_insights.length}
-                </span>
+              <span className="inline-flex items-center gap-1.5">
+                {tab}
+                {tab === "insights" && insights && (
+                  <span className="text-[10px] font-mono tabular-nums bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                    {insights.non_obvious_insights.length}
+                  </span>
+                )}
+              </span>
+              {activeTab === tab && (
+                <span className="absolute left-3 right-3 -bottom-px h-[2px] bg-slate-900 rounded-full" />
               )}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col bg-slate-50/30">
           {activeTab === "graph" && (
             <div className="flex-1 flex overflow-hidden">
               <FocusGraph
@@ -335,7 +330,7 @@ export default function Home() {
           )}
 
           {activeTab === "sentiment" && (
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-8">
               <SentimentMap sentiments={insights?.agent_sentiments ?? []} />
             </div>
           )}

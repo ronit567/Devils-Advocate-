@@ -188,13 +188,8 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
           >
             <defs>
               <filter id="node-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
+                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.18" />
               </filter>
-              <linearGradient id="connection-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#a855f7" stopOpacity="0.9" />
-                <stop offset="50%" stopColor="#ec4899" stopOpacity="0.7" />
-                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.9" />
-              </linearGradient>
             </defs>
 
             {/* Animated connection lines */}
@@ -205,7 +200,7 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
               const lifetime = 3500;
               const remaining = Math.max(0, conn.expiresAt - Date.now());
               const fade = remaining / lifetime;
-              const baseOpacity = conn.strong ? 0.85 : 0.45;
+              const baseOpacity = conn.strong ? 0.9 : 0.4;
               const opacity = (fade > 0.33 ? 1 : fade / 0.33) * baseOpacity;
               return (
                 <line
@@ -214,12 +209,12 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
                   y1={from.y}
                   x2={to.x}
                   y2={to.y}
-                  stroke={conn.strong ? "url(#connection-gradient)" : "#c4b5fd"}
-                  strokeWidth={conn.strong ? 2 : 1.3}
+                  stroke={conn.strong ? "#0f172a" : "#cbd5e1"}
+                  strokeWidth={conn.strong ? 1.5 : 1}
                   strokeLinecap="round"
                   opacity={opacity}
                   style={{
-                    strokeDasharray: conn.strong ? "10 6" : "5 5",
+                    strokeDasharray: conn.strong ? "10 6" : "4 4",
                     animation: `dash-flow ${conn.strong ? 0.9 : 1.4}s linear infinite`,
                   }}
                 />
@@ -283,42 +278,42 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
         </div>
 
         {personas.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none">
-            Waiting for the focus group to begin...
+          <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-[13px] pointer-events-none">
+            Waiting for the focus group to begin
           </div>
         )}
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute top-3 right-3 flex flex-col bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+      <div className="absolute top-4 right-4 flex flex-col bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <button
           onClick={() => zoomBy(1.25)}
-          className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors border-b border-gray-200"
+          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors border-b border-slate-200"
           title="Zoom in"
           aria-label="Zoom in"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
         <button
           onClick={() => zoomBy(1 / 1.25)}
-          className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors border-b border-gray-200"
+          className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors border-b border-slate-200"
           title="Zoom out"
           aria-label="Zoom out"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
         <button
           onClick={resetZoom}
-          className="w-8 h-8 flex items-center justify-center text-[10px] font-mono font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          className="w-7 h-7 flex items-center justify-center text-[9px] font-mono font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors tabular-nums"
           title="Reset zoom"
           aria-label="Reset zoom"
         >
-          {Math.round(zoom * 100)}%
+          {Math.round(zoom * 100)}
         </button>
       </div>
 
