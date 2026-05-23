@@ -113,9 +113,26 @@ class SessionStatus(str, Enum):
     error = "error"
 
 
+class StructuredBrief(BaseModel):
+    pricing: Optional[str] = None
+    target_users: Optional[str] = None
+    key_features: Optional[str] = None
+
+
+class Attachment(BaseModel):
+    type: str  # "image" | "pdf" | "text"
+    name: str
+    # For images: raw base64 (no data URL prefix) + media_type (e.g. image/png)
+    # For pdf/text: extracted plain-text content
+    content: str
+    media_type: Optional[str] = None
+
+
 class SessionCreate(BaseModel):
     product_brief: str
     num_agents: int = 20
+    structured: Optional[StructuredBrief] = None
+    attachments: list[Attachment] = []
 
 
 class SessionResponse(BaseModel):
