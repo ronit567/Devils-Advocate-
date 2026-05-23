@@ -327,7 +327,7 @@ export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
         <input
           type="range"
           min={5}
-          max={30}
+          max={70}
           step={1}
           value={numAgents}
           onChange={(e) => setNumAgents(Number(e.target.value))}
@@ -335,8 +335,8 @@ export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
           disabled={isRunning}
         />
         <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-          <span>fast</span>
-          <span>rich</span>
+          <span>5 (fast)</span>
+          <span>70 (rich)</span>
         </div>
       </div>
 

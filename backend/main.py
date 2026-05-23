@@ -13,8 +13,13 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pypdf import PdfReader
 
-from models import SessionCreate, SessionResponse, SessionStatus, InsightReport, Attachment
-from persona_loader import select_personas
+from models import SessionCreate, SessionResponse, SessionStatus, InsightReport, Attachment, Persona
+from persona_loader import (
+    select_personas,
+    load_default_personas,
+    load_custom_personas,
+    save_custom_personas,
+)
 from orchestrator import FocusGroupOrchestrator
 from insight_extractor import extract_insights
 
@@ -54,7 +59,7 @@ app.add_middleware(
 @app.post("/session", response_model=SessionResponse)
 async def create_session(body: SessionCreate):
     session_id = str(uuid.uuid4())
-    personas = select_personas(min(body.num_agents, 30))
+    personas = select_personas(min(body.num_agents, 70))
     processed_attachments = [_process_attachment(a) for a in body.attachments]
 
     sessions[session_id] = {
@@ -187,3 +192,34 @@ def _get_session(session_id: str) -> dict:
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# --- Custom persona management ---
+
+@app.get("/personas")
+async def list_personas():
+    return {
+        "default": [p.model_dump() for p in load_default_personas()],
+        "custom": [p.model_dump() for p in load_custom_personas()],
+    }
+
+
+@app.post("/personas/custom", response_model=Persona)
+async def create_custom_persona(persona: Persona):
+    custom = load_custom_personas()
+    # Reject duplicate IDs
+    if any(p.id == persona.id for p in custom):
+        raise HTTPException(status_code=409, detail="A custom persona with this id already exists")
+    custom.append(persona)
+    save_custom_personas(custom)
+    return persona
+
+
+@app.delete("/personas/custom/{persona_id}")
+async def delete_custom_persona(persona_id: str):
+    custom = load_custom_personas()
+    filtered = [p for p in custom if p.id != persona_id]
+    if len(filtered) == len(custom):
+        raise HTTPException(status_code=404, detail="Custom persona not found")
+    save_custom_personas(filtered)
+    return {"ok": True}

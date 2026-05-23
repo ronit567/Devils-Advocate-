@@ -10,6 +10,7 @@ import InsightPanel from "./components/InsightPanel";
 import SentimentMap from "./components/SentimentMap";
 import PhaseIndicator from "./components/PhaseIndicator";
 import StatusCard from "./components/StatusCard";
+import PersonasPanel from "./components/PersonasPanel";
 
 const API_BASE = "http://localhost:8000";
 
@@ -34,7 +35,7 @@ export default function Home() {
   const [typingPersonaId, setTypingPersonaId] = useState<string | null>(null);
   const [completedTurns, setCompletedTurns] = useState<Set<string>>(new Set());
   const [totalCost, setTotalCost] = useState(0);
-  const [activeTab, setActiveTab] = useState<"graph" | "insights" | "sentiment">("graph");
+  const [activeTab, setActiveTab] = useState<"graph" | "insights" | "sentiment" | "personas">("graph");
   const [connections, setConnections] = useState<Connection[]>([]);
 
   const wsRef = useRef<FocusGroupWS | null>(null);
@@ -292,7 +293,7 @@ export default function Home() {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 bg-white">
-          {(["graph", "insights", "sentiment"] as const).map((tab) => (
+          {(["graph", "insights", "sentiment", "personas"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -338,6 +339,8 @@ export default function Home() {
               <SentimentMap sentiments={insights?.agent_sentiments ?? []} />
             </div>
           )}
+
+          {activeTab === "personas" && <PersonasPanel />}
         </div>
       </main>
     </div>
