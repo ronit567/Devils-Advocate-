@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import io
 import json
 import uuid
 import os
@@ -9,11 +11,25 @@ load_dotenv()
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pypdf import PdfReader
 
-from models import SessionCreate, SessionResponse, SessionStatus, InsightReport
+from models import SessionCreate, SessionResponse, SessionStatus, InsightReport, Attachment
 from persona_loader import select_personas
 from orchestrator import FocusGroupOrchestrator
 from insight_extractor import extract_insights
+
+
+def _process_attachment(att: Attachment) -> Attachment:
+    """For PDFs, decode the base64 content and extract text. Images and text pass through."""
+    if att.type == "pdf":
+        try:
+            pdf_bytes = base64.b64decode(att.content)
+            reader = PdfReader(io.BytesIO(pdf_bytes))
+            text = "\n\n".join((page.extract_text() or "") for page in reader.pages)
+            return Attachment(type="pdf", name=att.name, content=text.strip())
+        except Exception as e:
+            return Attachment(type="text", name=att.name, content=f"[Failed to extract PDF: {e}]")
+    return att
 
 # In-memory session store (sufficient for hackathon)
 sessions: dict[str, dict] = {}
