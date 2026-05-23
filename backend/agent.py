@@ -187,8 +187,10 @@ async def call_agent(
 
     messages.append({"role": "user", "content": phase_instruction})
 
+    model = MODEL_ALIASES.get(model_override, HAIKU_MODEL) if model_override else HAIKU_MODEL
+
     async with _client.messages.stream(
-        model=HAIKU_MODEL,
+        model=model,
         max_tokens=300,
         system=system_prompt,
         messages=messages,
