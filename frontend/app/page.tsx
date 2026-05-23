@@ -224,8 +224,8 @@ export default function Home() {
               <div className="w-2 h-2 rounded-full bg-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-gray-900 tracking-tight leading-none">SynthFocus</h1>
-              <p className="text-[11px] text-gray-500 mt-0.5">AI focus groups in seconds</p>
+              <h1 className="text-base font-bold text-gray-900 tracking-tight leading-none">Devil&apos;s Advocate</h1>
+              <p className="text-[11px] text-gray-500 mt-0.5">AI focus groups that actually push back</p>
             </div>
           </div>
         </div>
