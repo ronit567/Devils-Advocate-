@@ -81,6 +81,56 @@ def _format_history(history: list[Message]) -> list[dict]:
     return formatted
 
 
+def _format_structured(structured: dict | None) -> str:
+    if not structured:
+        return ""
+    labels = {
+        "pricing": "Pricing / business model",
+        "target_users": "Who it's for",
+        "key_features": "Key features",
+    }
+    lines = []
+    for key, label in labels.items():
+        value = (structured.get(key) or "").strip()
+        if value:
+            lines.append(f"{label}: {value}")
+    return ("\n\n" + "\n".join(lines)) if lines else ""
+
+
+def _build_brief_content(
+    product_brief: str,
+    structured: dict | None,
+    attachments: list[dict],
+    intro: str,
+) -> list[dict]:
+    """Build a list of content blocks for the brief message. Text + any images."""
+    text_parts = [intro, product_brief]
+    text_parts.append(_format_structured(structured))
+
+    # Append text-based attachments (extracted PDF text, .txt/.md files)
+    text_attachments = [a for a in attachments if a.get("type") in ("pdf", "text") and a.get("content")]
+    if text_attachments:
+        text_parts.append("\n\nADDITIONAL DOCUMENTS:")
+        for a in text_attachments:
+            text_parts.append(f"\n— {a['name']} —\n{a['content'][:4000]}")
+
+    image_attachments = [a for a in attachments if a.get("type") == "image"]
+    if image_attachments:
+        text_parts.append(f"\n\n(There {'is' if len(image_attachments) == 1 else 'are'} also {len(image_attachments)} visual mockup{'s' if len(image_attachments) != 1 else ''} attached below.)")
+
+    blocks: list[dict] = [{"type": "text", "text": "\n".join(p for p in text_parts if p)}]
+    for a in image_attachments:
+        blocks.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": a.get("media_type") or "image/png",
+                "data": a["content"],
+            },
+        })
+    return blocks
+
+
 async def call_agent(
     persona: Persona,
     product_brief: str,
@@ -90,28 +140,36 @@ async def call_agent(
     is_provocateur: bool = False,
     is_dissenter: bool = False,
     private_mode: bool = False,
+    structured: dict | None = None,
+    attachments: list[dict] | None = None,
 ) -> str:
     system_prompt = _build_system_prompt(persona)
     phase_instruction = _build_phase_instruction(phase, round_num, is_provocateur, is_dissenter)
+    attachments = attachments or []
 
     messages: list[dict] = []
 
     if private_mode:
-        # Private opinion: no group context, no other agents' contributions.
-        # Prevents convergence collapse — the agent forms a view before being influenced.
-        brief_msg = (
-            f"PRODUCT IDEA:\n{product_brief}\n\n"
-            f"You're being asked privately for your personal reaction. Nobody else will see your answer before they give theirs. "
-            f"There is no group conversation yet."
+        intro = (
+            "PRODUCT BEING SHOWN TO YOU:\n"
         )
-        messages.append({"role": "user", "content": brief_msg})
+        outro = (
+            "\n\nYou're being asked privately for your personal reaction. Nobody else will see your answer before they give theirs. "
+            "There is no group conversation yet."
+        )
+        brief_blocks = _build_brief_content(product_brief, structured, attachments, intro)
+        # Append the private-mode framing to the trailing text block
+        brief_blocks[0]["text"] += outro
+        messages.append({"role": "user", "content": brief_blocks})
         messages.append({"role": "assistant", "content": f"Got it. Here's my honest, independent take as {persona.name}."})
     else:
-        brief_msg = f"PRODUCT IDEA BEING DISCUSSED:\n{product_brief}\n\nParticipants in this focus group: {_participant_names(history)}\n\nThe focus group is now in session."
-        messages.append({"role": "user", "content": brief_msg})
+        intro = "PRODUCT BEING DISCUSSED IN THIS FOCUS GROUP:\n"
+        outro = f"\n\nParticipants in this focus group: {_participant_names(history)}\n\nThe focus group is now in session."
+        brief_blocks = _build_brief_content(product_brief, structured, attachments, intro)
+        brief_blocks[0]["text"] += outro
+        messages.append({"role": "user", "content": brief_blocks})
         messages.append({"role": "assistant", "content": f"I'm {persona.name}, and I'm ready to share my thoughts."})
 
-        # Add history of other agents' messages
         for msg in history[-20:]:
             messages.append({
                 "role": "user",

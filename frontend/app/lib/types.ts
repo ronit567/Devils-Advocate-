@@ -93,6 +93,20 @@ export interface PersonaInfo {
   avatar_color: string;
 }
 
+export interface StructuredBrief {
+  pricing?: string;
+  target_users?: string;
+  key_features?: string;
+}
+
+export interface BriefAttachment {
+  type: "image" | "pdf" | "text";
+  name: string;
+  // For images: raw base64. For pdf/text: base64-encoded file contents (backend extracts text for pdfs).
+  content: string;
+  media_type?: string;
+}
+
 export interface WSEvent {
   type: WSEventType;
   data: Record<string, unknown>;
