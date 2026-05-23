@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AgentMessage, InsightReport, WSEvent, Phase, PersonaInfo } from "./lib/types";
+import { AgentMessage, InsightReport, WSEvent, Phase, PersonaInfo, StructuredBrief, BriefAttachment } from "./lib/types";
 import { FocusGroupWS } from "./lib/websocket";
 import ProductBriefForm from "./components/ProductBriefForm";
 import FocusGraph from "./components/FocusGraph";
@@ -182,7 +182,12 @@ export default function Home() {
     }
   }, []);
 
-  const handleStart = useCallback(async (brief: string, numAgents: number) => {
+  const handleStart = useCallback(async (
+    brief: string,
+    numAgents: number,
+    structured: StructuredBrief,
+    attachments: BriefAttachment[],
+  ) => {
     setMessages([]);
     setPersonas([]);
     setInsights(null);
@@ -197,7 +202,12 @@ export default function Home() {
       const res = await fetch(`${API_BASE}/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_brief: brief, num_agents: numAgents }),
+        body: JSON.stringify({
+          product_brief: brief,
+          num_agents: numAgents,
+          structured,
+          attachments,
+        }),
       });
       const { session_id } = await res.json();
 
