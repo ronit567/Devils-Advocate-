@@ -55,10 +55,13 @@ app.add_middleware(
 async def create_session(body: SessionCreate):
     session_id = str(uuid.uuid4())
     personas = select_personas(min(body.num_agents, 30))
+    processed_attachments = [_process_attachment(a) for a in body.attachments]
 
     sessions[session_id] = {
         "status": SessionStatus.pending,
         "product_brief": body.product_brief,
+        "structured": body.structured.model_dump() if body.structured else None,
+        "attachments": [a.model_dump() for a in processed_attachments],
         "personas": personas,
         "history": [],
         "insights": None,
@@ -121,6 +124,8 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
         personas=session["personas"],
         product_brief=session["product_brief"],
         ws_queue=ws_queue,
+        structured=session.get("structured"),
+        attachments=session.get("attachments", []),
     )
 
     # Run orchestration in background

@@ -10,10 +10,20 @@ TOKEN_FLUSH_INTERVAL_S = 0.08
 
 
 class FocusGroupOrchestrator:
-    def __init__(self, session_id: str, personas: list[Persona], product_brief: str, ws_queue: asyncio.Queue):
+    def __init__(
+        self,
+        session_id: str,
+        personas: list[Persona],
+        product_brief: str,
+        ws_queue: asyncio.Queue,
+        structured: dict | None = None,
+        attachments: list[dict] | None = None,
+    ):
         self.session_id = session_id
         self.personas = personas
         self.product_brief = product_brief
+        self.structured = structured
+        self.attachments = attachments or []
         self.ws_queue = ws_queue
         self.history: list[Message] = []
         self.turn_count = 0
@@ -133,6 +143,8 @@ class FocusGroupOrchestrator:
             is_provocateur=is_provocateur,
             is_dissenter=is_dissenter,
             private_mode=private_mode,
+            structured=self.structured,
+            attachments=self.attachments,
         ):
             full_content += token
             buffer += token
