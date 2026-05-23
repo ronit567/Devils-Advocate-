@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import FocusGroupSettingsPanel from "./FocusGroupSettingsPanel";
+import { FocusGroupSettings } from "../lib/focusGroupSettings";
 
 const API_BASE = "http://localhost:8000";
 
@@ -83,7 +85,12 @@ const emptyForm = (color: string): FormState => ({
   avatar_color: color,
 });
 
-export default function PersonasPanel() {
+interface PersonasPanelProps {
+  settings: FocusGroupSettings;
+  onSettingsChange: (s: FocusGroupSettings) => void;
+}
+
+export default function PersonasPanel({ settings, onSettingsChange }: PersonasPanelProps) {
   const [defaults, setDefaults] = useState<Persona[]>([]);
   const [custom, setCustom] = useState<Persona[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -215,7 +222,16 @@ export default function PersonasPanel() {
 
   return (
     <div className="overflow-y-auto h-full bg-white">
-      <div className="max-w-5xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
+        {/* Settings panel applies globally to every focus group run */}
+        <FocusGroupSettingsPanel
+          settings={settings}
+          onChange={onSettingsChange}
+          allPersonas={[...defaults, ...custom]}
+          defaultCount={defaults.length}
+          customCount={custom.length}
+        />
+
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>

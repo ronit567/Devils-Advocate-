@@ -11,6 +11,13 @@ import SentimentMap from "./components/SentimentMap";
 import PhaseIndicator from "./components/PhaseIndicator";
 import StatusCard from "./components/StatusCard";
 import PersonasPanel from "./components/PersonasPanel";
+import {
+  DEFAULT_SETTINGS,
+  FocusGroupSettings,
+  loadSettings,
+  saveSettings,
+  settingsToPayload,
+} from "./lib/focusGroupSettings";
 
 const API_BASE = "http://localhost:8000";
 
@@ -37,6 +44,17 @@ export default function Home() {
   const [totalCost, setTotalCost] = useState(0);
   const [activeTab, setActiveTab] = useState<"graph" | "insights" | "sentiment" | "personas">("graph");
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [settings, setSettings] = useState<FocusGroupSettings>(DEFAULT_SETTINGS);
+
+  // Hydrate settings from localStorage on mount (client-only)
+  useEffect(() => {
+    setSettings(loadSettings());
+  }, []);
+
+  // Persist settings whenever they change
+  useEffect(() => {
+    saveSettings(settings);
+  }, [settings]);
 
   const wsRef = useRef<FocusGroupWS | null>(null);
   const streamingContentRef = useRef<string>("");
@@ -208,6 +226,8 @@ export default function Home() {
           num_agents: numAgents,
           structured,
           attachments,
+          model: settings.model,
+          filters: settingsToPayload(settings),
         }),
       });
       const { session_id } = await res.json();
@@ -220,7 +240,7 @@ export default function Home() {
     } catch (e) {
       console.error("Failed to start session", e);
     }
-  }, [handleEvent]);
+  }, [handleEvent, settings]);
 
   const visiblePersonas = personas.length > 0
     ? personas
@@ -335,7 +355,9 @@ export default function Home() {
             </div>
           )}
 
-          {activeTab === "personas" && <PersonasPanel />}
+          {activeTab === "personas" && (
+            <PersonasPanel settings={settings} onSettingsChange={setSettings} />
+          )}
         </div>
       </main>
     </div>
