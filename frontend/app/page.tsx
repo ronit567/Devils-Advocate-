@@ -18,6 +18,12 @@ import {
   saveSettings,
   settingsToPayload,
 } from "./lib/focusGroupSettings";
+import {
+  BuilderSource,
+  PendingPersonaJob,
+  pickResolutionDelayMs,
+  stubPersonaFromDescription,
+} from "./lib/personaBuilders";
 
 const API_BASE = "http://localhost:8000";
 
@@ -45,6 +51,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"graph" | "insights" | "sentiment" | "personas">("graph");
   const [connections, setConnections] = useState<Connection[]>([]);
   const [settings, setSettings] = useState<FocusGroupSettings>(DEFAULT_SETTINGS);
+  const [pendingJobs, setPendingJobs] = useState<PendingPersonaJob[]>([]);
+  const [personaRefreshTrigger, setPersonaRefreshTrigger] = useState(0);
 
   // Hydrate settings from localStorage on mount (client-only)
   useEffect(() => {
@@ -92,6 +100,56 @@ export default function Home() {
     }, 500);
     return () => clearInterval(interval);
   }, [connections.length]);
+
+  // Pending persona job resolver: every 500ms, any job past its resolvesAt fires.
+  // Builds a stub Persona from the description and POSTs it via the existing endpoint.
+  useEffect(() => {
+    if (pendingJobs.length === 0) return;
+    const interval = setInterval(async () => {
+      const now = Date.now();
+      const ripe = pendingJobs.filter((j) => j.resolvesAt <= now);
+      if (ripe.length === 0) return;
+
+      // Remove ripe jobs from pending immediately so the poller doesn't re-fire
+      setPendingJobs((prev) => prev.filter((j) => !ripe.some((r) => r.id === j.id)));
+
+      for (const job of ripe) {
+        try {
+          const persona = stubPersonaFromDescription(job, new Set());
+          const res = await fetch(`${API_BASE}/personas/custom`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(persona),
+          });
+          if (!res.ok) {
+            console.error("Stub persona creation failed", await res.text());
+          }
+        } catch (err) {
+          console.error("Stub persona creation error", err);
+        }
+      }
+      // Trigger PersonasPanel refetch
+      setPersonaRefreshTrigger((n) => n + 1);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [pendingJobs]);
+
+  const addPendingJob = useCallback((source: BuilderSource, description: string, avatarColor: string) => {
+    const now = Date.now();
+    const job: PendingPersonaJob = {
+      id: `pending_${now.toString(36)}_${Math.floor(Math.random() * 10000)}`,
+      source,
+      description,
+      avatar_color: avatarColor,
+      startedAt: now,
+      resolvesAt: now + pickResolutionDelayMs(source),
+    };
+    setPendingJobs((prev) => [...prev, job]);
+  }, []);
+
+  const cancelPendingJob = useCallback((id: string) => {
+    setPendingJobs((prev) => prev.filter((j) => j.id !== id));
+  }, []);
 
   const handleEvent = useCallback((event: WSEvent) => {
     switch (event.type) {
@@ -356,7 +414,14 @@ export default function Home() {
           )}
 
           {activeTab === "personas" && (
-            <PersonasPanel settings={settings} onSettingsChange={setSettings} />
+            <PersonasPanel
+              settings={settings}
+              onSettingsChange={setSettings}
+              pendingJobs={pendingJobs}
+              onAddPendingJob={addPendingJob}
+              onCancelPendingJob={cancelPendingJob}
+              refreshTrigger={personaRefreshTrigger}
+            />
           )}
         </div>
       </main>

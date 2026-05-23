@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import FocusGroupSettingsPanel from "./FocusGroupSettingsPanel";
+import PendingPersonaCard from "./PendingPersonaCard";
 import { FocusGroupSettings } from "../lib/focusGroupSettings";
+import { BuilderSource, PendingPersonaJob } from "../lib/personaBuilders";
 
 const API_BASE = "http://localhost:8000";
 
@@ -88,15 +90,28 @@ const emptyForm = (color: string): FormState => ({
 interface PersonasPanelProps {
   settings: FocusGroupSettings;
   onSettingsChange: (s: FocusGroupSettings) => void;
+  pendingJobs: PendingPersonaJob[];
+  onAddPendingJob: (source: BuilderSource, description: string, avatarColor: string) => void;
+  onCancelPendingJob: (id: string) => void;
+  refreshTrigger: number;
 }
 
-export default function PersonasPanel({ settings, onSettingsChange }: PersonasPanelProps) {
+export default function PersonasPanel({
+  settings,
+  onSettingsChange,
+  pendingJobs,
+  onAddPendingJob,
+  onCancelPendingJob,
+  refreshTrigger,
+}: PersonasPanelProps) {
   const [defaults, setDefaults] = useState<Persona[]>([]);
   const [custom, setCustom] = useState<Persona[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(() => emptyForm(COLOR_PALETTE[0]));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoDescription, setAutoDescription] = useState("");
+  const [autoError, setAutoError] = useState<string | null>(null);
 
   const usedColors = new Set([...defaults, ...custom].map((p) => p.avatar_color));
 
@@ -113,7 +128,19 @@ export default function PersonasPanel({ settings, onSettingsChange }: PersonasPa
 
   useEffect(() => {
     fetchPersonas();
-  }, []);
+  }, [refreshTrigger]);
+
+  const handleAutoBuild = (source: BuilderSource) => {
+    setAutoError(null);
+    const desc = autoDescription.trim();
+    if (desc.length < 10) {
+      setAutoError("Add a few more words so the build has something to work with");
+      return;
+    }
+    onAddPendingJob(source, desc, randomColor(usedColors));
+    setAutoDescription("");
+    setShowForm(false);
+  };
 
   const openForm = () => {
     setForm(emptyForm(randomColor(usedColors)));
@@ -403,6 +430,40 @@ export default function PersonasPanel({ settings, onSettingsChange }: PersonasPa
               </div>
             </Field>
 
+            {/* Auto-build buttons — use the partially-filled form as the seed,
+                kick off a background job, and close the form. */}
+            <div>
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">
+                Auto-build <span className="text-slate-400 normal-case">(optional · runs in background)</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAutoBuild("reddit")}
+                  className="flex-1 min-w-[140px] h-8 rounded-md text-[12px] font-medium border border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50 text-slate-800 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  Reddit search
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAutoBuild("interviewer")}
+                  className="flex-1 min-w-[140px] h-8 rounded-md text-[12px] font-medium border border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50 text-slate-800 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                  </svg>
+                  AI Interviewer
+                </button>
+              </div>
+              {autoError && (
+                <div className="mt-1.5 text-[11px] text-rose-600">{autoError}</div>
+              )}
+            </div>
+
             {error && <div className="text-[12px] text-rose-600">{error}</div>}
 
             <div className="flex justify-end gap-2 pt-1">
@@ -424,11 +485,21 @@ export default function PersonasPanel({ settings, onSettingsChange }: PersonasPa
           </form>
         )}
 
-        {/* Custom personas */}
-        {custom.length > 0 && (
+        {/* Custom personas (including any in-flight builds) */}
+        {(custom.length > 0 || pendingJobs.length > 0) && (
           <section>
-            <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-3">Your custom personas</h3>
+            <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-3">
+              Your custom personas
+              {pendingJobs.length > 0 && (
+                <span className="ml-2 text-slate-400 normal-case font-mono tabular-nums">
+                  · {pendingJobs.length} building
+                </span>
+              )}
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {pendingJobs.map((job) => (
+                <PendingPersonaCard key={job.id} job={job} onCancel={() => onCancelPendingJob(job.id)} />
+              ))}
               {custom.map((p) => renderCard(p, true))}
             </div>
           </section>

@@ -18,12 +18,14 @@ interface Props {
 }
 
 const NODE_RADIUS = 9;
-const MIN_CANVAS_WIDTH = 1400;
-const MIN_CANVAS_HEIGHT = 1000;
-const PX_PER_AGENT_X = 90;
-const PX_PER_AGENT_Y = 70;
-const MARGIN = 100;
-const MIN_ZOOM = 0.4;
+// Canvas scales with agent count. Tighter spacing keeps the graph compact.
+const MIN_CANVAS_WIDTH = 1200;
+const MIN_CANVAS_HEIGHT = 800;
+const PX_PER_AGENT_X = 55;
+const PX_PER_AGENT_Y = 42;
+const MARGIN = 60;
+// Hard floor; the real per-render minimum is computed so all nodes always fit
+const MIN_ZOOM_FLOOR = 0.1;
 const MAX_ZOOM = 2.5;
 
 function rand(seed: number, salt: number): number {
@@ -53,6 +55,7 @@ function scatterPosition(index: number, total: number, width: number, height: nu
 export default function FocusGraph({ personas, typingPersonaId, connections }: Props) {
   const [, forceTick] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ active: boolean; startX: number; startY: number; scrollLeft: number; scrollTop: number }>({
     active: false,
@@ -69,8 +72,30 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
     return () => clearInterval(id);
   }, [connections.length]);
 
+  // Observe container size so the fit-zoom can be recomputed on resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const update = () => setContainerSize({ width: el.clientWidth, height: el.clientHeight });
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const canvasWidth = Math.max(MIN_CANVAS_WIDTH, personas.length * PX_PER_AGENT_X);
   const canvasHeight = Math.max(MIN_CANVAS_HEIGHT, personas.length * PX_PER_AGENT_Y);
+
+  // The smallest zoom that still fits the entire canvas in the viewport (with a little padding).
+  // This becomes the floor — zoom-out lets the user see every node no matter how many.
+  const fitZoom = useMemo(() => {
+    if (containerSize.width === 0 || containerSize.height === 0) return MIN_ZOOM_FLOOR;
+    const fit = Math.min(
+      containerSize.width / canvasWidth,
+      containerSize.height / canvasHeight,
+    ) * 0.95;
+    return Math.max(MIN_ZOOM_FLOOR, Math.min(1, fit));
+  }, [containerSize.width, containerSize.height, canvasWidth, canvasHeight]);
 
   const positions = useMemo(() => {
     const map = new Map<string, { x: number; y: number }>();
@@ -86,7 +111,7 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
     const el = containerRef.current;
     el.scrollLeft = (canvasWidth * zoom - el.clientWidth) / 2;
     el.scrollTop = (canvasHeight * zoom - el.clientHeight) / 2;
-    // Only fire on persona load — zoom changes are handled in setZoomAround
+    // Only fire on persona load
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personas.length]);
 
@@ -95,7 +120,7 @@ export default function FocusGraph({ personas, typingPersonaId, connections }: P
     if (!containerRef.current) return;
     const el = containerRef.current;
     const oldZoom = zoom;
-    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+    const clamped = Math.max(fitZoom, Math.min(MAX_ZOOM, newZoom));
     if (clamped === oldZoom) return;
 
     // Point in content coordinates (before zoom) that's currently under the focal point
