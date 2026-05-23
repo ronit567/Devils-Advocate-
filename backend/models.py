@@ -128,11 +128,23 @@ class Attachment(BaseModel):
     media_type: Optional[str] = None
 
 
+class FocusGroupFilters(BaseModel):
+    pool: str = "all"  # all | default | custom
+    age_min: Optional[int] = None
+    age_max: Optional[int] = None
+    income_brackets: list[str] = []      # empty = no restriction
+    archetypes: list[str] = []           # empty = no restriction
+    tech_comfort_min: Optional[int] = None
+    tech_comfort_max: Optional[int] = None
+
+
 class SessionCreate(BaseModel):
     product_brief: str
     num_agents: int = 20
     structured: Optional[StructuredBrief] = None
     attachments: list[Attachment] = []
+    model: Optional[str] = None             # "haiku" | "sonnet" — defaults to haiku
+    filters: Optional[FocusGroupFilters] = None
 
 
 class SessionResponse(BaseModel):

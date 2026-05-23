@@ -7,8 +7,14 @@ _client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 _SYSTEM_TEMPLATE = (Path(__file__).parent / "prompts" / "agent_system.txt").read_text()
 
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
+SONNET_MODEL = "claude-sonnet-4-6"
 
-# Approximate token cost for Haiku (input + output per turn)
+MODEL_ALIASES = {
+    "haiku": HAIKU_MODEL,
+    "sonnet": SONNET_MODEL,
+}
+
+# Approximate token cost per turn (input + output)
 COST_PER_TURN_USD = 0.0008
 
 

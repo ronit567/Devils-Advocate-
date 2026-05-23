@@ -59,7 +59,7 @@ app.add_middleware(
 @app.post("/session", response_model=SessionResponse)
 async def create_session(body: SessionCreate):
     session_id = str(uuid.uuid4())
-    personas = select_personas(min(body.num_agents, 70))
+    personas = select_personas(min(body.num_agents, 70), filters=body.filters)
     processed_attachments = [_process_attachment(a) for a in body.attachments]
 
     sessions[session_id] = {
@@ -68,6 +68,7 @@ async def create_session(body: SessionCreate):
         "structured": body.structured.model_dump() if body.structured else None,
         "attachments": [a.model_dump() for a in processed_attachments],
         "personas": personas,
+        "model": body.model,
         "history": [],
         "insights": None,
         "ws_queue": None,
@@ -131,6 +132,7 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
         ws_queue=ws_queue,
         structured=session.get("structured"),
         attachments=session.get("attachments", []),
+        model_override=session.get("model"),
     )
 
     # Run orchestration in background

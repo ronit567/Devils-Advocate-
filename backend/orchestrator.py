@@ -18,12 +18,14 @@ class FocusGroupOrchestrator:
         ws_queue: asyncio.Queue,
         structured: dict | None = None,
         attachments: list[dict] | None = None,
+        model_override: str | None = None,
     ):
         self.session_id = session_id
         self.personas = personas
         self.product_brief = product_brief
         self.structured = structured
         self.attachments = attachments or []
+        self.model_override = model_override
         self.ws_queue = ws_queue
         self.history: list[Message] = []
         self.turn_count = 0
@@ -145,6 +147,7 @@ class FocusGroupOrchestrator:
             private_mode=private_mode,
             structured=self.structured,
             attachments=self.attachments,
+            model_override=self.model_override,
         ):
             full_content += token
             buffer += token
