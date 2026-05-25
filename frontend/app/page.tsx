@@ -9,9 +9,7 @@ import TranscriptPanel from "./components/TranscriptPanel";
 import InsightPanel from "./components/InsightPanel";
 import SentimentMap from "./components/SentimentMap";
 import PhaseIndicator from "./components/PhaseIndicator";
-import StatusCard from "./components/StatusCard";
 import PersonasPanel from "./components/PersonasPanel";
-import BuildQueuePanel from "./components/BuildQueuePanel";
 import SavedRunsPanel from "./components/SavedRunsPanel";
 import {
   DEFAULT_SETTINGS,
@@ -378,14 +376,17 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-white text-slate-900 overflow-hidden">
       {/* Left panel */}
-      <aside className="w-[300px] flex-shrink-0 flex flex-col border-r border-slate-200 overflow-hidden bg-slate-50/50">
+      <aside className="w-[300px] flex-shrink-0 flex flex-col border-r border-slate-200 overflow-hidden bg-slate-50/40">
         {/* Header */}
         <div className="h-14 px-5 flex items-center border-b border-slate-200 bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-br from-indigo-400 to-rose-400" />
+            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm ring-1 ring-slate-900/5">
+              <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-indigo-400 via-fuchsia-400 to-rose-400" />
             </div>
-            <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight">Devil&apos;s Advocate</h1>
+            <div className="flex flex-col leading-none">
+              <h1 className="text-[14px] font-semibold text-slate-900 tracking-tight">Devil&apos;s Advocate</h1>
+              <span className="text-[10px] text-slate-500 mt-0.5">Synthetic focus groups</span>
+            </div>
           </div>
         </div>
 
@@ -395,16 +396,19 @@ export default function Home() {
             <ProductBriefForm onSubmit={handleStart} isRunning={isRunning} />
           </div>
 
-          <StatusCard
-            phase={currentPhase}
-            isRunning={isRunning}
-            isExtracting={isExtracting}
-            personas={personas}
-            completedTurns={completedTurns}
-            typingPersonaId={typingPersonaId}
-            turnCount={messages.length}
-            onStop={handleStop}
-          />
+          {isRunning && !isExtracting && (
+            <div className="border-t border-slate-200 bg-white px-5 py-3">
+              <button
+                onClick={handleStop}
+                className="w-full h-8 rounded-md text-[12px] font-semibold border border-slate-200 text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="1" />
+                </svg>
+                Stop &amp; analyze
+              </button>
+            </div>
+          )}
 
           <SavedRunsPanel
             runs={savedRuns}
@@ -419,13 +423,13 @@ export default function Home() {
         {/* Cost footer */}
         <div className="border-t border-slate-200 bg-white px-5 py-3.5">
           <div className="flex items-baseline justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Cost</span>
-            <span className="text-sm font-mono tabular-nums font-semibold text-slate-900">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500">Session cost</span>
+            <span className="text-[13px] font-mono tabular-nums font-semibold text-slate-900">
               ${totalCost.toFixed(4)}
             </span>
           </div>
-          <div className="mt-1 text-[11px] text-slate-400">
-            vs $15,000+ for a live focus group
+          <div className="mt-1 text-[10px] text-slate-400 tracking-wide">
+            vs. $15,000+ for a traditional focus group
           </div>
         </div>
       </aside>
@@ -455,27 +459,27 @@ export default function Home() {
         />
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 bg-white px-2">
+        <div className="flex border-b border-slate-200 bg-white px-3">
           {(["graph", "insights", "sentiment", "personas"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative px-3 h-10 text-[13px] font-medium capitalize transition-colors ${
+              className={`relative px-3.5 h-10 text-[13px] font-medium capitalize transition-colors duration-150 ${
                 activeTab === tab
                   ? "text-slate-900"
-                  : "text-slate-500 hover:text-slate-800"
+                  : "text-slate-500 hover:text-slate-900"
               }`}
             >
               <span className="inline-flex items-center gap-1.5">
                 {tab}
                 {tab === "insights" && viewInsights && (
-                  <span className="text-[10px] font-mono tabular-nums bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono tabular-nums bg-slate-900 text-white px-1.5 py-0.5 rounded-md leading-none">
                     {viewInsights.non_obvious_insights.length}
                   </span>
                 )}
               </span>
               {activeTab === tab && (
-                <span className="absolute left-3 right-3 -bottom-px h-[2px] bg-slate-900 rounded-full" />
+                <span className="absolute left-3.5 right-3.5 -bottom-px h-[2px] bg-slate-900 rounded-full" />
               )}
             </button>
           ))}
@@ -514,13 +518,12 @@ export default function Home() {
               onSettingsChange={setSettings}
               onAddPendingJob={addPendingJob}
               refreshTrigger={personaRefreshTrigger}
+              pendingJobs={pendingJobs}
+              onCancelPendingJob={cancelPendingJob}
             />
           )}
         </div>
       </main>
-
-      {/* Floating build queue — visible from every tab while jobs are pending */}
-      <BuildQueuePanel jobs={pendingJobs} onCancel={cancelPendingJob} />
     </div>
   );
 }

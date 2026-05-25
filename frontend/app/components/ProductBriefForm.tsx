@@ -8,21 +8,6 @@ interface Props {
   isRunning: boolean;
 }
 
-const EXAMPLE_BRIEFS = [
-  {
-    title: "AI calendar",
-    text: "An AI-powered tool that automatically schedules your week based on your priorities and energy levels throughout the day.",
-  },
-  {
-    title: "Restaurant subscription",
-    text: "A subscription service that sends you a curated box of local restaurant meals every week, with recipes to recreate them at home.",
-  },
-  {
-    title: "Fridge scanner",
-    text: "A mobile app that uses your phone's camera to identify ingredients in your fridge and suggests recipes you can make right now.",
-  },
-];
-
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const ACCEPTED_MIME = "image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,text/markdown";
 
@@ -149,25 +134,6 @@ export default function ProductBriefForm({ onSubmit, isRunning }: Props) {
           className={`${INPUT} resize-none`}
           disabled={isRunning}
         />
-      </div>
-
-      {/* Examples */}
-      <div>
-        <p className="text-[11px] text-slate-500 mb-1.5">Examples</p>
-        <div className="space-y-1">
-          {EXAMPLE_BRIEFS.map((example, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setBrief(example.text)}
-              className="w-full text-left text-[12px] px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-between gap-2"
-              disabled={isRunning}
-            >
-              <span className="truncate">{example.title}</span>
-              <span className="text-slate-300">↵</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Collapsible: structured fields */}

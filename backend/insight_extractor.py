@@ -143,7 +143,7 @@ async def _run_executive_summary(
         "consensus_points": structural.get("consensus_points", []),
     }, indent=2)
 
-    prompt = f"""You are a blunt, senior product strategist. Based on this focus group analysis, write exactly 3 bullet points as an executive recommendation for the product team.
+    prompt = f"""You are a blunt, senior product strategist writing a 30-second briefing for a founder who is about to make a real decision. Vagueness costs them money.
 
 PRODUCT BRIEF:
 {product_brief}
@@ -151,12 +151,29 @@ PRODUCT BRIEF:
 KEY INSIGHTS:
 {insights_summary}
 
-Rules:
-- Be direct. No corporate hedging.
-- If there's a fatal flaw, lead with it.
-- Each bullet is 1-2 sentences max.
-- Format: Return a JSON array of 3 strings. Raw JSON only, no markdown.
-- Example: ["The pricing model will kill adoption in the SMB segment — 70% of participants cited cost as a dealbreaker.", "The core value prop resonates strongly with tech-savvy users but falls apart for anyone with under 3/5 tech comfort.", "Invest in onboarding before launch — 8 of 20 participants said they'd abandon the product in the first week."]"""
+Write 3-5 bullets, ranked by importance, that pass this test: "If the founder read only this bullet, would they know what to do differently tomorrow?"
+
+HISTORICAL PRECEDENT (CHECK FIRST — REASONING AID ONLY):
+Scan the KEY INSIGHTS for any reference to a real historical product (Google Glass, Quibi, Juicero, Theranos, Segway, Magic Leap, HoloLens, Fitbit, Oculus, Alexa, etc.). If 2+ agents independently named the same one, that convergence is the most important signal — your FIRST bullet MUST surface the known failure modes of that analog (e.g., for a Google Glass-like product: public-recording stigma, $1500+ price-to-utility gap, social stigma of wearing a visible camera, battery dying within a workday, prescription incompatibility, getting kicked out of public venues). The second bullet should usually propose the pivot to whatever vertical that analog eventually worked in (e.g., warehouse picking, surgical guidance, field repair, enterprise tools).
+
+HARD CONSTRAINT: NEVER name a historical product brand in your output bullets. No "Google Glass", "Quibi", "Juicero", "Theranos", "Magic Leap", "HoloLens", "Segway", "Fitbit", "Oculus", "Alexa", or any other brand. The analog is your reasoning aid — it shapes WHAT to surface, but it does not appear in the prose. Translate the precedent into a present-tense finding about THIS product. Describe pivots by the vertical, not by who made that pivot work.
+
+WRITING RULES:
+- Lead with action, then evidence. ("Drop the freemium tier — 4 of 6 paying-intent agents said it would erase their willingness to pay.")
+- Use specific numbers ("4 of 6 agents", "both Gen Z participants"). Never "many", "some", "a number of".
+- Name segments or personas — never "users" or "people".
+- No hedging. Banned: "might", "could potentially", "may suggest", "seems to indicate".
+- No consultant-speak. Banned: "leverage", "optimize for", "ensure that", "going forward", "robust", "holistic", "key takeaway".
+- Delete generic bullets. If it could apply to any product without changing a word, cut it.
+- If there is a fatal flaw, lead with it AND name the fix.
+- Each bullet is 1-2 punchy sentences max.
+
+OUTPUT: JSON array of 3-5 strings. Raw JSON only, no markdown.
+
+GOOD examples:
+["Drop the $9.99/mo tier — 4 of 6 cost-sensitive agents said it kills adoption; test a one-time $29 unlock instead.",
+ "The brand only works because of the school partnership; without it, all 3 parent personas refused to engage — make that integration a launch requirement, not a roadmap item.",
+ "Power users (Marcus, Priya) wanted depth; casual users (the 3 parents) wanted speed. You cannot serve both with this design — pick a segment before building."]"""
 
     response = await _client.messages.create(
         model=SONNET_MODEL,

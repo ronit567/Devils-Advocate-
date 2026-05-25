@@ -1,17 +1,29 @@
 [
   {
-    "id": "custom_ronit__mpij8qdv",
-    "name": "Ronit",
-    "age": 34,
-    "occupation": "Nurse",
+    "id": "custom_xochitl_mplkw9iy_665",
+    "name": "Xochitl",
+    "age": 25,
+    "occupation": "Retail store manager",
     "location": "Various",
     "income_bracket": "middle",
-    "archetype": "pragmatic_skeptic",
-    "tech_comfort": 3,
-    "pain_points": [],
-    "motivations": [],
-    "communication_style": "Very Skeptic",
-    "likely_objections": [],
-    "avatar_color": "#50E3C2"
+    "archetype": "value_optimizer",
+    "tech_comfort": 1,
+    "pain_points": [
+      "doesn't want another subscription",
+      "limited free time",
+      "tight monthly budget"
+    ],
+    "motivations": [
+      "simplicity",
+      "value for money",
+      "saving time"
+    ],
+    "communication_style": "Story-driven. Reaches for personal anecdotes. Takes time to get to the point. Background: 25-year-old. Nurse. middle-income. tech comfort 3/5",
+    "likely_objections": [
+      "too many notifications",
+      "price",
+      "data privacy"
+    ],
+    "avatar_color": "#0FB5BA"
   }
 ]

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import FocusGroupSettingsPanel from "./FocusGroupSettingsPanel";
+import PendingPersonaCard from "./PendingPersonaCard";
 import { FocusGroupSettings } from "../lib/focusGroupSettings";
-import { BuilderSource } from "../lib/personaBuilders";
+import { BuilderSource, PendingPersonaJob } from "../lib/personaBuilders";
 
 const API_BASE = "http://localhost:8000";
 
@@ -77,7 +78,9 @@ const emptyForm = (color: string): FormState => ({
   occupation: "",
   location: "Various",
   income_bracket: "middle",
-  archetype: ARCHETYPES[0],
+  // Archetype isn't shown in the UI any more — picked randomly so the focus
+  // group's diversity logic still has something to round-robin on.
+  archetype: ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)],
   tech_comfort: 3,
   pain_points: "",
   motivations: "",
@@ -91,6 +94,8 @@ interface PersonasPanelProps {
   onSettingsChange: (s: FocusGroupSettings) => void;
   onAddPendingJob: (source: BuilderSource, description: string, avatarColor: string) => void;
   refreshTrigger: number;
+  pendingJobs: PendingPersonaJob[];
+  onCancelPendingJob: (id: string) => void;
 }
 
 export default function PersonasPanel({
@@ -98,6 +103,8 @@ export default function PersonasPanel({
   onSettingsChange,
   onAddPendingJob,
   refreshTrigger,
+  pendingJobs,
+  onCancelPendingJob,
 }: PersonasPanelProps) {
   const [defaults, setDefaults] = useState<Persona[]>([]);
   const [custom, setCustom] = useState<Persona[]>([]);
@@ -132,7 +139,6 @@ export default function PersonasPanel({
     if (form.occupation.trim()) parts.push(form.occupation.trim());
     if (form.location.trim() && form.location.trim() !== "Various") parts.push(`in ${form.location.trim()}`);
     if (form.income_bracket) parts.push(`${form.income_bracket}-income`);
-    if (form.archetype.trim()) parts.push(`archetype: ${form.archetype.trim().replace(/_/g, " ")}`);
     if (form.tech_comfort) parts.push(`tech comfort ${form.tech_comfort}/5`);
     if (form.pain_points.trim()) parts.push(`pain points: ${form.pain_points.trim()}`);
     if (form.motivations.trim()) parts.push(`motivations: ${form.motivations.trim()}`);
@@ -140,7 +146,7 @@ export default function PersonasPanel({
 
     const desc = parts.join(". ");
     if (desc.length < 10) {
-      setAutoError("Fill in at least an occupation, archetype, or a few traits to seed the build");
+      setAutoError("Fill in at least an occupation or a few traits to seed the build");
       return;
     }
     onAddPendingJob(source, desc, form.avatar_color);
@@ -260,8 +266,6 @@ export default function PersonasPanel({
           settings={settings}
           onChange={onSettingsChange}
           allPersonas={[...defaults, ...custom]}
-          defaultCount={defaults.length}
-          customCount={custom.length}
         />
 
         {/* Header */}
@@ -349,19 +353,6 @@ export default function PersonasPanel({
                     <option key={o} value={o}>{o}</option>
                   ))}
                 </select>
-              </Field>
-              <Field label="Archetype *">
-                <input
-                  type="text"
-                  value={form.archetype}
-                  onChange={(e) => setForm({ ...form, archetype: e.target.value })}
-                  required
-                  list="archetypes"
-                  className={inputClass}
-                />
-                <datalist id="archetypes">
-                  {ARCHETYPES.map((a) => <option key={a} value={a} />)}
-                </datalist>
               </Field>
               <Field label={`Tech comfort: ${form.tech_comfort}/5`}>
                 <input
@@ -488,10 +479,22 @@ export default function PersonasPanel({
           </form>
         )}
 
-        {/* Custom personas */}
-        {custom.length > 0 ? (
+        {/* Custom personas — pending builds appear in-place alongside finished ones */}
+        {(custom.length > 0 || pendingJobs.length > 0) ? (
           <section>
+            {pendingJobs.length > 0 && (
+              <div className="text-[11px] font-mono tabular-nums text-slate-400 mb-2">
+                {pendingJobs.length} building...
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {pendingJobs.map((job) => (
+                <PendingPersonaCard
+                  key={job.id}
+                  job={job}
+                  onCancel={() => onCancelPendingJob(job.id)}
+                />
+              ))}
               {custom.map((p) => renderCard(p, true))}
             </div>
           </section>

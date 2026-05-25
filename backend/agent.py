@@ -191,7 +191,7 @@ async def call_agent(
 
     async with _client.messages.stream(
         model=model,
-        max_tokens=300,
+        max_tokens=150,
         system=system_prompt,
         messages=messages,
     ) as stream:

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FocusGroupSettings, ModelChoice, PoolChoice } from "../lib/focusGroupSettings";
+import { FocusGroupSettings, ModelChoice } from "../lib/focusGroupSettings";
 
 interface Persona {
   age: number;
@@ -15,19 +15,16 @@ interface Props {
   settings: FocusGroupSettings;
   onChange: (settings: FocusGroupSettings) => void;
   allPersonas: Persona[];
-  defaultCount: number;
-  customCount: number;
 }
 
-const INCOME_OPTIONS = ["low", "middle", "high"];
+const INCOME_OPTIONS: { value: string; label: string }[] = [
+  { value: "low", label: "Low" },
+  { value: "middle", label: "Middle" },
+  { value: "high", label: "High" },
+];
 const MODEL_OPTIONS: { value: ModelChoice; label: string; sub: string }[] = [
   { value: "haiku", label: "Haiku 4.5", sub: "Fast · ~$0.001/turn" },
   { value: "sonnet", label: "Sonnet 4.6", sub: "Smarter · ~$0.005/turn" },
-];
-const POOL_OPTIONS: { value: PoolChoice; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "default", label: "Default only" },
-  { value: "custom", label: "Custom only" },
 ];
 
 // Number input that allows blank → null
@@ -53,22 +50,6 @@ function NumInput({
       }}
       className="w-full bg-white border border-slate-200 rounded-md px-2 py-1 text-[12px] font-mono tabular-nums text-slate-900 placeholder-slate-300 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/5 transition-colors"
     />
-  );
-}
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-[11px] font-medium px-2 py-1 rounded-md border transition-colors ${
-        active
-          ? "bg-slate-900 border-slate-900 text-white"
-          : "bg-white border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -239,15 +220,14 @@ function matches(p: Persona, s: FocusGroupSettings): boolean {
   return true;
 }
 
-export default function FocusGroupSettingsPanel({ settings, onChange, allPersonas, defaultCount, customCount }: Props) {
+export default function FocusGroupSettingsPanel({ settings, onChange, allPersonas }: Props) {
   const archetypeSet = Array.from(new Set(allPersonas.map((p) => p.archetype))).sort();
+  const matchCount = allPersonas.filter((p) => matches(p, settings)).length;
 
-  // Pool-scoped personas for the match count
-  const scoped =
-    settings.pool === "default" ? allPersonas.slice(0, defaultCount) :
-    settings.pool === "custom"  ? allPersonas.slice(defaultCount, defaultCount + customCount) :
-    allPersonas;
-  const matchCount = scoped.filter((p) => matches(p, settings)).length;
+  const incomeCounts: Record<string, number> = {};
+  for (const p of allPersonas) {
+    incomeCounts[p.income_bracket] = (incomeCounts[p.income_bracket] ?? 0) + 1;
+  }
 
   const set = (patch: Partial<FocusGroupSettings>) => onChange({ ...settings, ...patch });
 
@@ -312,31 +292,29 @@ export default function FocusGroupSettingsPanel({ settings, onChange, allPersona
           </div>
         </div>
 
-        {/* Pool */}
+        {/* Income */}
         <div className="col-span-4">
-          <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Pool</label>
+          <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Income</label>
           <div className="space-y-1">
-            {POOL_OPTIONS.map((opt) => {
-              const count =
-                opt.value === "default" ? defaultCount :
-                opt.value === "custom"  ? customCount :
-                defaultCount + customCount;
+            {INCOME_OPTIONS.map((opt) => {
+              const active = settings.income_brackets.includes(opt.value);
+              const count = incomeCounts[opt.value] ?? 0;
               return (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => set({ pool: opt.value })}
-                  disabled={opt.value === "custom" && customCount === 0}
+                  onClick={() => set({ income_brackets: toggle(settings.income_brackets, opt.value) })}
+                  disabled={count === 0}
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                    settings.pool === opt.value
+                    active
                       ? "bg-slate-900 border-slate-900 text-white"
                       : "bg-white border-slate-200 hover:border-slate-300"
                   }`}
                 >
-                  <span className={`text-[12px] font-medium ${settings.pool === opt.value ? "text-white" : "text-slate-700"}`}>
+                  <span className={`text-[12px] font-medium ${active ? "text-white" : "text-slate-700"}`}>
                     {opt.label}
                   </span>
-                  <span className={`text-[10px] font-mono tabular-nums ${settings.pool === opt.value ? "text-slate-300" : "text-slate-400"}`}>
+                  <span className={`text-[10px] font-mono tabular-nums ${active ? "text-slate-300" : "text-slate-400"}`}>
                     {count}
                   </span>
                 </button>
@@ -365,24 +343,8 @@ export default function FocusGroupSettingsPanel({ settings, onChange, allPersona
           </div>
         </div>
 
-        {/* Income */}
-        <div className="col-span-4">
-          <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Income</label>
-          <div className="flex flex-wrap gap-1.5">
-            {INCOME_OPTIONS.map((opt) => (
-              <Chip
-                key={opt}
-                active={settings.income_brackets.includes(opt)}
-                onClick={() => set({ income_brackets: toggle(settings.income_brackets, opt) })}
-              >
-                {opt}
-              </Chip>
-            ))}
-          </div>
-        </div>
-
         {/* Archetypes */}
-        <div className="col-span-8">
+        <div className="col-span-12">
           <label className="block text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">
             Archetypes <span className="text-slate-400 normal-case">(leave blank for all)</span>
           </label>

@@ -1,9 +1,7 @@
 export type ModelChoice = "haiku" | "sonnet";
-export type PoolChoice = "all" | "default" | "custom";
 
 export interface FocusGroupSettings {
   model: ModelChoice;
-  pool: PoolChoice;
   age_min: number | null;
   age_max: number | null;
   income_brackets: string[];   // empty = all
@@ -14,7 +12,6 @@ export interface FocusGroupSettings {
 
 export const DEFAULT_SETTINGS: FocusGroupSettings = {
   model: "haiku",
-  pool: "all",
   age_min: null,
   age_max: null,
   income_brackets: [],
@@ -49,7 +46,6 @@ export function saveSettings(settings: FocusGroupSettings): void {
 // Strip null fields so the backend gets clean optional fields
 export function settingsToPayload(s: FocusGroupSettings) {
   return {
-    pool: s.pool,
     age_min: s.age_min ?? undefined,
     age_max: s.age_max ?? undefined,
     income_brackets: s.income_brackets,

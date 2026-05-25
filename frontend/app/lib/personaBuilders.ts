@@ -53,12 +53,13 @@ export const SOURCE_LABEL: Record<BuilderSource, string> = {
   interviewer: "Interview",
 };
 
-// Simulated duration: Reddit feels quicker, interviewer feels heavier
+// Simulated duration: Reddit feels lighter, interviewer is genuinely long.
+// Tuned to feel like real background work rather than a snappy demo.
 export function pickResolutionDelayMs(source: BuilderSource): number {
   if (source === "reddit") {
-    return 12_000 + Math.random() * 10_000;   // 12–22s
+    return 90_000 + Math.random() * 60_000;     // 1.5–2.5 min
   }
-  return 25_000 + Math.random() * 20_000;     // 25–45s
+  return 180_000 + Math.random() * 120_000;     // 3–5 min
 }
 
 // ---------- Stub persona synthesis ----------
