@@ -25,7 +25,9 @@ import {
   stubPersonaFromDescription,
 } from "./lib/personaBuilders";
 
-const API_BASE = "http://localhost:8000";
+// On Vercel multi-service deploys, point at the backend's route prefix.
+// Locally we still hit the FastAPI dev server directly.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
 interface Connection {
   id: string;

@@ -11,7 +11,10 @@ export class FocusGroupWS {
   }
 
   connect() {
-    const url = `ws://localhost:8000/session/${this.sessionId}/stream`;
+    // Derive ws(s)://host from the API base if it's configured, otherwise hit the local backend.
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+    const wsBase = apiBase.replace(/^http/, "ws");
+    const url = `${wsBase}/session/${this.sessionId}/stream`;
     console.log("[WS] connecting to", url);
     this.ws = new WebSocket(url);
 
