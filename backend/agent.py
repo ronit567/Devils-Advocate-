@@ -197,6 +197,7 @@ async def call_agent(
     ) as stream:
         async for text in stream.text_stream:
             yield text
+            yield text
 
 
 def _participant_names(history: list[Message]) -> str:
